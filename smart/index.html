@@ -1403,10 +1403,11 @@ const cleanCell = c => String(c ?? '').replace(/[\s ]+/g, ' ').replace(/["'״׳
 function detectHeader(row) {
   const cells = row.map(cleanCell);
   if (cells.filter(Boolean).length < 3) return null;
-  let date = -1, ds = -1, desc = -1, dss = -1, amt = -1, as = -1, debit = -1, credit = -1, balance = false;
+  let date = -1, ds = -1, desc = -1, dss = -1, amt = -1, as = -1, debit = -1, credit = -1, inst = -1, balance = false;
   cells.forEach((c, i) => {
     if (!c || c.length > 40) return;
     if (/תאריך|^date|date$/i.test(c)) { const sc = /עסקה|רכישה|ביצוע|פעולה/.test(c) ? 3 : /ערך/.test(c) ? 1 : /חיוב/.test(c) ? 0 : 2; if (sc > ds) { ds = sc; date = i; } return; }
+    if (/תשלו[םמ]|installment/i.test(c) && !/סכום/.test(c)) { if (inst < 0) inst = i; return; }
     if (/יתרה|balance/i.test(c)) { balance = true; return; }
     if (/זכות|^credit/i.test(c)) { if (credit < 0) credit = i; return; }
     if (/חובה|^debit/i.test(c)) { if (debit < 0) debit = i; return; }
@@ -1416,9 +1417,25 @@ function detectHeader(row) {
     if (/^(פרטים|הפעולה|פעולה|פירוט|שם)$/.test(c)) { if (dss < 1) { dss = 1; desc = i; } }
   });
   if (date < 0 || desc < 0 || (amt < 0 && debit < 0 && credit < 0)) return null;
-  return {date, desc, amt, debit, credit, bank: balance || debit >= 0 || credit >= 0};
+  return {date, desc, amt, debit, credit, inst, bank: balance || debit >= 0 || credit >= 0};
 }
 
+/* "תשלום 3 מתוך 12" (also "3 מתוך 12", "3/12" in an installments column) -> {n, of} */
+const INST_FULL = /תשלו[םמ]\S*\s*(\d{1,2})\s*(?:מתוך|מ-?|\/|of)\s*(\d{1,2})(?!\d)/;
+const INST_SHORT = /(?:^|\D)(\d{1,2})\s*(?:מתוך|\/|of)\s*(\d{1,2})(?!\d)/;
+function parseInstallment(row, map) {
+  for (let i = 0; i < row.length; i++) {
+    if (i === map.date || i === map.amt || i === map.debit || i === map.credit) continue;
+    const v = row[i];
+    if (v instanceof Date || typeof v === 'number') continue;
+    const s = String(v ?? '').trim();
+    if (!s || parseDate(s)) continue;
+    let m = s.match(INST_FULL);
+    if (!m && (i === map.inst || /תשלו[םמ]/.test(s))) m = s.match(INST_SHORT);
+    if (m) { const n = +m[1], of = +m[2]; if (of >= 2 && of <= 60 && n >= 1 && n <= of) return {n, of}; }
+  }
+  return null;
+}
 /* one data row -> {date, desc, amt, dir} ; dir 'out' = money went out, 'in' = money came in */
 function rowToTx(row, map) {
   const date = parseDate(row[map.date]); if (!date) return null;
@@ -1431,7 +1448,10 @@ function rowToTx(row, map) {
     if (d) signed = Math.abs(d); else if (c) signed = -Math.abs(c);
   }
   if (!signed) return null;
-  return {date, desc, amt: r2(Math.abs(signed)), dir: signed > 0 ? 'out' : 'in'};
+  const inst = parseInstallment(row, map);
+  const tx = {date, desc, amt: r2(Math.abs(signed)), dir: signed > 0 ? 'out' : 'in', month: inst ? addMonth(date.slice(0, 7), inst.n - 1) : date.slice(0, 7)};
+  if (inst) tx.inst = inst;
+  return tx;
 }
 function autoParse(rows) {
   let map = null; const out = [];
@@ -1464,7 +1484,8 @@ function merchantKey(desc) {
 function txDelta(rec) { return G[rec.g].kind === 'income' ? (rec.dir === 'in' ? rec.amt : -rec.amt) : (rec.dir === 'out' ? rec.amt : -rec.amt); }
 function findItem2(m, g, name) { return m.groups[g].find(x => (x.name || '').trim() === name.trim()); }
 function assign(tx, rule) {
-  const rec = {id: tx.id, date: tx.date, desc: tx.desc, amt: tx.amt, dir: tx.dir, key: tx.key, importId: tx.importId, month: tx.date.slice(0, 7)};
+  const rec = {id: tx.id, date: tx.date, desc: tx.desc, amt: tx.amt, dir: tx.dir, key: tx.key, importId: tx.importId, month: tx.month || tx.date.slice(0, 7)};
+  if (tx.inst) rec.inst = tx.inst;
   if (rule.ignore) rec.ignore = true;
   else {
     rec.g = rule.g; rec.item = rule.item;
@@ -1480,7 +1501,7 @@ function unassign(rec) {
   if (!rec.ignore) { const m = state.months[rec.month]; const it = m && findItem2(m, rec.g, rec.item); if (it) it.actual = r2(num(it.actual) - txDelta(rec)); }
   state.tx = state.tx.filter(x => x !== rec);
 }
-const asPending = r => ({id: r.id, date: r.date, desc: r.desc, amt: r.amt, dir: r.dir, key: r.key, importId: r.importId});
+const asPending = r => { const t = {id: r.id, date: r.date, desc: r.desc, amt: r.amt, dir: r.dir, key: r.key, importId: r.importId, month: r.month}; if (r.inst) t.inst = r.inst; return t; };
 const ruleOk = r => r && (r.ignore || (G[r.g] && r.item));
 
 function importTxs(list, fileName) {
@@ -1488,7 +1509,7 @@ function importTxs(list, fileName) {
   const importId = uid(), occ = {}, months = new Set();
   let dup = 0, auto = 0, fresh = 0;
   for (const t of list) {
-    const base = `${t.date}|${t.desc}|${t.amt}|${t.dir}`;
+    const base = `${t.date}|${t.desc}|${t.amt}|${t.dir}` + (t.inst ? `|i${t.inst.n}/${t.inst.of}` : '');
     occ[base] = (occ[base] || 0) + 1;
     const id = base + '#' + occ[base];
     if (state.seen[id]) { dup++; continue; }
@@ -1564,13 +1585,13 @@ function renderSorter() {
   if (sess.info.dup) notes.push(`<span class="chip neutral">${sess.info.dup} חיובים כבר יובאו בעבר ודילגנו עליהם</span>`);
   $('#sNotes').innerHTML = notes.join('');
   const more = txs.length > 1 ? `<div class="s-more"><b>ועוד ${txs.length - 1} ${txs.length === 2 ? 'חיוב' : 'חיובים'} מאותו בית עסק – יסווגו יחד</b> · סה״כ ${fmtC(r2(Math.abs(net)))}
-      <ul>${txs.slice(0, 12).map(t => `<li>${dateLabel(t.date)} · ${t.dir === 'in' ? 'זיכוי ' : ''}${fmtC(t.amt)}</li>`).join('')}${txs.length > 12 ? `<li>ועוד ${txs.length - 12}…</li>` : ''}</ul></div>` : '';
+      <ul>${txs.slice(0, 12).map(t => `<li>${dateLabel(t.date)} · ${t.dir === 'in' ? 'זיכוי ' : ''}${fmtC(t.amt)}${t.inst ? ` · תשלום ${t.inst.n}/${t.inst.of}` : ''}</li>`).join('')}${txs.length > 12 ? `<li>ועוד ${txs.length - 12}…</li>` : ''}</ul></div>` : '';
   $('#sCard').innerHTML = `
-    <span class="chip ${first.dir === 'in' ? 'good' : 'info'} s-kind">${first.dir === 'in' ? 'זיכוי / הכנסה' : 'חיוב'}</span>
+    <span class="chip ${first.dir === 'in' ? 'good' : 'info'} s-kind">${first.dir === 'in' ? 'זיכוי / הכנסה' : 'חיוב'}</span>${first.inst ? ` <span class="chip info s-kind">תשלום ${first.inst.n} מתוך ${first.inst.of}</span>` : ''}
     <div class="merchant">${esc(first.desc)}</div>
     <div class="samt ${first.dir === 'in' ? 'in' : ''}">${fmtC(first.amt)}</div>
-    <div class="s-meta">${dateLabel(first.date)} · נספר ל${monthLabel(first.date.slice(0, 7))}</div>${more}${first.dir === 'out' && CARD_PAY.test(first.desc) ? '<div class="s-hint">נראה כמו תשלום חודשי של כרטיס אשראי. אם אתם מייבאים גם את פירוט הכרטיס, בחרו "לא לספור" כדי שההוצאות לא ייספרו פעמיים.</div>' : ''}`;
-  const groups = itemNamesFor(first.date.slice(0, 7));
+    <div class="s-meta">${first.inst ? 'רכישה ב-' : ''}${dateLabel(first.date)} · נספר ל${monthLabel(first.month || first.date.slice(0, 7))}</div>${more}${first.dir === 'out' && CARD_PAY.test(first.desc) ? '<div class="s-hint">נראה כמו תשלום חודשי של כרטיס אשראי. אם אתם מייבאים גם את פירוט הכרטיס, בחרו "לא לספור" כדי שההוצאות לא ייספרו פעמיים.</div>' : ''}`;
+  const groups = itemNamesFor(first.month || first.date.slice(0, 7));
   const order = isIn ? ['income', 'variable', 'fixed', 'savings'] : ['variable', 'fixed', 'savings', 'income'];
   $('#sGroups').innerHTML = order.map(k => {
     const g = G[k];
