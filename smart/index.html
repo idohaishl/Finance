@@ -339,19 +339,23 @@ dialog::backdrop{background:rgba(0,0,0,.28);-webkit-backdrop-filter:blur(6px);ba
 table.items tbody tr.txrow:hover{background:transparent}
 table.items tr.txrow td{padding:0 4px 10px}
 .txlist{padding:4px 16px;border-radius:16px;background:var(--field)}
-.txline{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--hair);font-size:14px}
+.txline{display:grid;grid-template-columns:76px minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--hair);font-size:14px}
 .txline .d{color:var(--muted);font-size:13px}
 .txline .n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .txline .n small{color:var(--muted);margin-inline-start:6px}
 .txline .a{font-weight:700;white-space:nowrap}
 .txline .a.minus{color:var(--green-ink)}
+.txmove{appearance:none;-webkit-appearance:none;border:1px solid var(--stroke);background:var(--glass-hi);color:var(--fg);border-radius:999px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;width:96px;text-align:center;text-align-last:center}
+.txmove:hover{background:var(--blue-t);color:var(--blue-ink)}
+.txmove:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .txsum{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 0 6px;font-size:13px;color:var(--muted)}
 .txsum b{color:var(--fg)}
 @media (max-width:760px){
   table.items tbody tr.txrow{display:block;padding:0;margin:-4px 0 14px;background:transparent;border:0;border-radius:0}
   table.items tr.txrow td{display:block;padding:0}
   table.items tr.txrow td::before{display:none}
-  .txline{grid-template-columns:60px minmax(0,1fr) auto;gap:8px}
+  .txline{grid-template-columns:54px minmax(0,1fr) auto auto;gap:6px}
+  .txmove{width:74px}
 }
 .s-hint{margin-top:14px;font-size:14px;color:var(--orange-ink);background:var(--orange-t);border-radius:14px;padding:10px 14px}
 .mlist{max-height:230px;overflow:auto;margin-top:6px}
@@ -1683,13 +1687,63 @@ function txRowHTML(g, it) {
     const d = txDelta(r); sum += d;
     const inst = r.inst ? `<small>תשלום ${r.inst.n} מתוך ${r.inst.of}</small>` : '';
     const refund = r.dir === 'in' && G[r.g].kind !== 'income' ? '<small>זיכוי</small>' : '';
-    return `<div class="txline"><span class="d">${dateLabel(r.date)}</span><span class="n" title="${esc(r.desc)}">${esc(r.desc)}${inst}${refund}</span><span class="a ${d < 0 ? 'minus' : ''}">${fmtC(Math.abs(d))}</span></div>`;
+    return `<div class="txline" data-txid="${esc(r.id)}"><span class="d">${dateLabel(r.date)}</span><span class="n" title="${esc(r.desc)}">${esc(r.desc)}${inst}${refund}</span><span class="a ${d < 0 ? 'minus' : ''}">${fmtC(Math.abs(d))}</span>${moveSelect(r)}</div>`;
   }).join('');
   sum = r2(sum);
   const manual = r2(num(it.actual) - sum);
   const note = Math.abs(manual) >= 0.5 ? `<span>מתוך ${fmtC(num(it.actual))} בפועל · ${fmtC(Math.abs(manual))} ${manual > 0 ? 'הוזנו' : 'הורדו'} ידנית</span>` : '';
   return `<tr class="txrow" data-for="${it.id}"><td colspan="6"><div class="txlist">${lines}<div class="txsum"><span>סה״כ מהקבצים: <b>${fmtC(Math.abs(sum))}</b></span>${note}</div></div></td></tr>`;
 }
+function moveSelect(r) {
+  const m = curMonth();
+  const groups = GROUPS.map(g => {
+    const names = [...new Set(m.groups[g.key].map(it => (it.name || '').trim()).filter(Boolean))].filter(n => !(g.key === r.g && n === (r.item || '').trim()));
+    if (!names.length) return '';
+    return `<optgroup label="${g.title}">${names.map(n => `<option value="${g.key}|${encodeURIComponent(n)}">${esc(n)}</option>`).join('')}</optgroup>`;
+  }).join('');
+  return `<select class="txmove" aria-label="העברת החיוב לסעיף אחר" title="העברה לסעיף אחר"><option value="" selected>העברה…</option>${groups}<optgroup label="אפשרויות נוספות"><option value="__new">+ סעיף חדש…</option><option value="__ignore">לא לספור</option></optgroup></select>`;
+}
+function bumpRec(rec, sign) {
+  const m = ensureMonth(rec.month);
+  let it = findItem2(m, rec.g, rec.item);
+  if (!it) { if (sign < 0) return; it = {id: uid(), name: rec.item, plan: 0, actual: 0, note: ''}; m.groups[rec.g].push(it); }
+  it.actual = r2(num(it.actual) + sign * txDelta(rec));
+}
+function moveRec(rec, target) {
+  if (!rec.ignore) bumpRec(rec, -1);
+  if (target.ignore) { rec.ignore = true; delete rec.g; delete rec.item; }
+  else { delete rec.ignore; rec.g = target.g; rec.item = target.item; bumpRec(rec, 1); }
+}
+$('#tables').addEventListener('change', e => {
+  const sel = e.target.closest('.txmove'); if (!sel || !sel.value) return;
+  const line = sel.closest('.txline');
+  const rec = state.tx.find(r => r.id === line.dataset.txid && !r.ignore);
+  const v = sel.value; sel.value = '';
+  if (!rec) return;
+  let target;
+  if (v === '__ignore') target = {ignore: true};
+  else if (v === '__new') {
+    const name = (prompt(`שם הסעיף החדש (ב${G[rec.g].title}):`) || '').trim();
+    if (!name) return;
+    target = {g: rec.g, item: name};
+  } else { const i = v.indexOf('|'); target = {g: v.slice(0, i), item: decodeURIComponent(v.slice(i + 1))}; }
+  const from = {g: rec.g, item: (rec.item || '').trim()};
+  const same = state.tx.filter(r => r !== rec && !r.ignore && r.key === rec.key && r.month === rec.month && r.g === from.g && (r.item || '').trim() === from.item);
+  const toName = target.ignore ? '"לא לספור"' : `"${target.item}"`;
+  const merchant = (state.rules[rec.key] && state.rules[rec.key].label) || rec.desc;
+  const all = confirm(same.length
+    ? `להעביר ל${toName} גם את ${same.length === 1 ? 'החיוב הנוסף' : same.length + ' החיובים הנוספים'} של "${merchant}" בסעיף הזה, ולזכור את זה לייבואים הבאים?
+
+אישור – את כולם · ביטול – רק את החיוב הזה`
+    : `לזכור לייבואים הבאים ש"${merchant}" שייך ל${toName}?
+
+אישור – כן · ביטול – רק את החיוב הזה`);
+  [rec, ...(all ? same : [])].forEach(r => moveRec(r, target));
+  if (all) state.rules[rec.key] = Object.assign({}, target, {label: merchant});
+  save(); renderTables(); renderDerived();
+  const n = 1 + (all ? same.length : 0);
+  toast(`${n === 1 ? 'החיוב הועבר' : n + ' חיובים הועברו'} ל${target.ignore ? '"לא לספור"' : toName}`);
+});
 function renameItemTx(gk, oldName, newName) {
   const o = oldName.trim();
   if (!o || !state.tx) return;
