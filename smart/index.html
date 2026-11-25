@@ -551,6 +551,15 @@ table.items tr.txrow td{padding:0 4px 10px}
   <!-- 4. tables -->
   <div id="tables"></div>
 
+  <!-- smart import: charges marked "לא לספור" -->
+  <section class="glass tablecard" id="ignoredCard" hidden style="--t:var(--field-2);--ink:var(--muted);--c:var(--faint)">
+    <div class="tablehead">
+      <div class="th-title"><span class="ic" data-icon="x"></span><div><h2>חיובים שלא נספרו</h2><div class="sub" id="ignoredSub"></div></div></div>
+      <button type="button" class="btn sm" id="ignoredToggle" aria-expanded="false" aria-controls="ignoredList">הצגה</button>
+    </div>
+    <div id="ignoredList" class="txlist" hidden></div>
+  </section>
+
   <!-- 5. history -->
   <section class="glass tablecard" id="history" style="--t:var(--blue-t);--ink:var(--blue-ink);--c:var(--blue)">
     <div class="tablehead">
@@ -1078,7 +1087,7 @@ function updateFooters() {
   }
 }
 
-function renderAll() { renderTop(); renderSummary(); renderCubes(); renderTables(); renderHistory(); renderImportBar(); }
+function renderAll() { renderTop(); renderSummary(); renderCubes(); renderTables(); renderHistory(); renderImportBar(); renderIgnored(); }
 let rafPending = false;
 function renderDerived() {
   if (rafPending) return; rafPending = true;
@@ -1520,7 +1529,7 @@ function assign(tx, rule) {
     rec.g = rule.g; rec.item = rule.item;
     const m = ensureMonth(rec.month);
     let it = findItem2(m, rec.g, rec.item);
-    if (!it) { it = {id: uid(), name: rec.item, plan: 0, actual: 0, note: ''}; m.groups[rec.g].push(it); }
+    if (!it) { it = {id: uid(), name: rec.item, plan: 0, actual: 0, note: ''}; m.groups[rec.g].push(it); addItemEverywhere(rec.g, rec.item, 0, rec.month); }
     it.actual = r2(num(it.actual) + txDelta(rec));
   }
   state.tx.push(rec);
@@ -1701,12 +1710,13 @@ function moveSelect(r) {
     if (!names.length) return '';
     return `<optgroup label="${g.title}">${names.map(n => `<option value="${g.key}|${encodeURIComponent(n)}">${esc(n)}</option>`).join('')}</optgroup>`;
   }).join('');
+  if (r.ignore) return `<select class="txmove" aria-label="החזרת החיוב לתקציב" title="החזרה לסעיף"><option value="" selected>החזרה…</option>${groups}<optgroup label="אפשרויות נוספות"><option value="__new">+ סעיף חדש…</option></optgroup></select>`;
   return `<select class="txmove" aria-label="העברת החיוב לסעיף אחר" title="העברה לסעיף אחר"><option value="" selected>העברה…</option>${groups}<optgroup label="אפשרויות נוספות"><option value="__new">+ סעיף חדש…</option><option value="__ignore">לא לספור</option></optgroup></select>`;
 }
 function bumpRec(rec, sign) {
   const m = ensureMonth(rec.month);
   let it = findItem2(m, rec.g, rec.item);
-  if (!it) { if (sign < 0) return; it = {id: uid(), name: rec.item, plan: 0, actual: 0, note: ''}; m.groups[rec.g].push(it); }
+  if (!it) { if (sign < 0) return; it = {id: uid(), name: rec.item, plan: 0, actual: 0, note: ''}; m.groups[rec.g].push(it); addItemEverywhere(rec.g, rec.item, 0, rec.month); }
   it.actual = r2(num(it.actual) + sign * txDelta(rec));
 }
 function moveRec(rec, target) {
@@ -1714,36 +1724,91 @@ function moveRec(rec, target) {
   if (target.ignore) { rec.ignore = true; delete rec.g; delete rec.item; }
   else { delete rec.ignore; rec.g = target.g; rec.item = target.item; bumpRec(rec, 1); }
 }
-$('#tables').addEventListener('change', e => {
+function onMove(e) {
   const sel = e.target.closest('.txmove'); if (!sel || !sel.value) return;
   const line = sel.closest('.txline');
-  const rec = state.tx.find(r => r.id === line.dataset.txid && !r.ignore);
+  const rec = state.tx.find(r => r.id === line.dataset.txid);
   const v = sel.value; sel.value = '';
   if (!rec) return;
+  const wasIgnored = !!rec.ignore;
+  const newG = rec.g || (rec.dir === 'in' ? 'income' : 'variable');
   let target;
   if (v === '__ignore') target = {ignore: true};
   else if (v === '__new') {
-    const name = (prompt(`שם הסעיף החדש (ב${G[rec.g].title}):`) || '').trim();
+    const name = (prompt(`שם הסעיף החדש (ב${G[newG].title}):`) || '').trim();
     if (!name) return;
-    target = {g: rec.g, item: name};
+    target = {g: newG, item: name};
   } else { const i = v.indexOf('|'); target = {g: v.slice(0, i), item: decodeURIComponent(v.slice(i + 1))}; }
-  const from = {g: rec.g, item: (rec.item || '').trim()};
-  const same = state.tx.filter(r => r !== rec && !r.ignore && r.key === rec.key && r.month === rec.month && r.g === from.g && (r.item || '').trim() === from.item);
+  const same = state.tx.filter(r => r !== rec && r.key === rec.key && r.month === rec.month &&
+    (wasIgnored ? r.ignore : (!r.ignore && r.g === rec.g && (r.item || '').trim() === (rec.item || '').trim())));
   const toName = target.ignore ? '"לא לספור"' : `"${target.item}"`;
   const merchant = (state.rules[rec.key] && state.rules[rec.key].label) || rec.desc;
+  const where = wasIgnored ? 'ברשימת החיובים שלא נספרו' : 'בסעיף הזה';
   const all = confirm(same.length
-    ? `להעביר ל${toName} גם את ${same.length === 1 ? 'החיוב הנוסף' : same.length + ' החיובים הנוספים'} של "${merchant}" בסעיף הזה, ולזכור את זה לייבואים הבאים?
-
-אישור – את כולם · ביטול – רק את החיוב הזה`
-    : `לזכור לייבואים הבאים ש"${merchant}" שייך ל${toName}?
-
-אישור – כן · ביטול – רק את החיוב הזה`);
+    ? `להעביר ל${toName} גם את ${same.length === 1 ? 'החיוב הנוסף' : same.length + ' החיובים הנוספים'} של "${merchant}" ${where}, ולזכור את זה לייבואים הבאים?\n\nאישור – את כולם · ביטול – רק את החיוב הזה`
+    : `לזכור לייבואים הבאים ש"${merchant}" שייך ל${toName}?\n\nאישור – כן · ביטול – רק את החיוב הזה`);
   [rec, ...(all ? same : [])].forEach(r => moveRec(r, target));
   if (all) state.rules[rec.key] = Object.assign({}, target, {label: merchant});
-  save(); renderTables(); renderDerived();
+  save(); renderTables(); renderDerived(); renderIgnored();
   const n = 1 + (all ? same.length : 0);
-  toast(`${n === 1 ? 'החיוב הועבר' : n + ' חיובים הועברו'} ל${target.ignore ? '"לא לספור"' : toName}`);
+  const verb = wasIgnored ? (n === 1 ? 'החיוב הוחזר' : n + ' חיובים הוחזרו') : (n === 1 ? 'החיוב הועבר' : n + ' חיובים הועברו');
+  toast(`${verb} ל${toName}`);
+}
+$('#tables').addEventListener('change', onMove);
+$('#ignoredList').addEventListener('change', onMove);
+
+/* ---------- charges marked "לא לספור" ---------- */
+let ignoredOpen = false;
+function renderIgnored() {
+  if (!state || !state.tx) return;
+  const recs = state.tx.filter(r => r.ignore && r.month === state.current).sort((a, b) => a.date.localeCompare(b.date));
+  $('#ignoredCard').hidden = !recs.length;
+  if (!recs.length) return;
+  const total = recs.reduce((s, r) => s + (r.dir === 'out' ? r.amt : -r.amt), 0);
+  $('#ignoredSub').textContent = `${recs.length === 1 ? 'חיוב אחד' : recs.length + ' חיובים'} · ${fmtC(r2(Math.abs(total)))} ב${monthLabel(state.current)} שלא נכללים בתקציב`;
+  $('#ignoredToggle').textContent = ignoredOpen ? 'הסתרה' : 'הצגה';
+  $('#ignoredToggle').setAttribute('aria-expanded', String(ignoredOpen));
+  $('#ignoredList').hidden = !ignoredOpen;
+  if (!ignoredOpen) return;
+  $('#ignoredList').innerHTML = recs.map(r => {
+    const inst = r.inst ? `<small>תשלום ${r.inst.n} מתוך ${r.inst.of}</small>` : '';
+    const kind = r.dir === 'in' ? '<small>זיכוי</small>' : '';
+    return `<div class="txline" data-txid="${esc(r.id)}"><span class="d">${dateLabel(r.date)}</span><span class="n" title="${esc(r.desc)}">${esc(r.desc)}${inst}${kind}</span><span class="a ${r.dir === 'in' ? 'minus' : ''}">${fmtC(r.amt)}</span>${moveSelect(r)}</div>`;
+  }).join('') + `<div class="txsum"><span>בחרו "החזרה…" כדי להכניס חיוב לסעיף בתקציב</span></div>`;
+}
+$('#ignoredToggle').addEventListener('click', () => { ignoredOpen = !ignoredOpen; renderIgnored(); });
+
+/* ---------- new items appear in every month ---------- */
+function addItemEverywhere(gk, name, plan, fromMonth) {
+  const n = (name || '').trim(); if (!n) return;
+  for (const [k, m] of Object.entries(state.months)) {
+    if (m.groups[gk].some(x => (x.name || '').trim() === n)) continue;
+    m.groups[gk].push({id: uid(), name: n, plan: k > fromMonth ? num(plan) : 0, actual: 0, note: ''});
+  }
+}
+function renameEverywhere(gk, oldName, newName) {
+  const o = oldName.trim(), n = newName.trim(); if (!o || !n || o === n) return;
+  for (const [k, m] of Object.entries(state.months)) {
+    if (k === state.current) continue;
+    const it = m.groups[gk].find(x => (x.name || '').trim() === o);
+    if (!it || m.groups[gk].some(x => (x.name || '').trim() === n)) continue;
+    it.name = n;
+    state.tx.forEach(r => { if (r.month === k && r.g === gk && (r.item || '').trim() === o) r.item = n; });
+  }
+}
+$('#tables').addEventListener('focusin', e => { const inp = e.target.closest('.in-name'); if (inp) inp.dataset.orig = inp.value; });
+$('#tables').addEventListener('change', e => {
+  const inp = e.target.closest('.in-name'); if (!inp) return;
+  const tr = inp.closest('tr[data-id]'); const gk = tr.dataset.g;
+  const it = curMonth().groups[gk].find(x => x.id === tr.dataset.id); if (!it) return;
+  const orig = (inp.dataset.orig || '').trim(), now = (it.name || '').trim();
+  inp.dataset.orig = inp.value;
+  if (!now || orig === now) return;
+  if (orig) renameEverywhere(gk, orig, now);
+  addItemEverywhere(gk, now, it.plan, state.current);
+  save(); renderHistory();
 });
+
 function renameItemTx(gk, oldName, newName) {
   const o = oldName.trim();
   if (!o || !state.tx) return;
