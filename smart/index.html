@@ -332,6 +332,14 @@ dialog::backdrop{background:rgba(0,0,0,.28);-webkit-backdrop-filter:blur(6px);ba
 .field select{flex:none}
 .namewrap{display:flex;align-items:center;gap:6px}
 .namewrap input{flex:1;min-width:0}
+.ord{display:flex;flex-direction:column;flex:none}
+.ord button{width:24px;height:18px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--faint);cursor:pointer;display:grid;place-items:center}
+.ord button svg{width:15px;height:15px;stroke-width:2.4}
+.ord button:hover:not(:disabled){background:var(--field-2);color:var(--fg)}
+.ord button:disabled{opacity:.25;cursor:default}
+@keyframes movedRow{from{background:var(--blue-t)}to{background:transparent}}
+table.items tr.moved td{animation:movedRow 1s ease}
+@media (max-width:760px){ .ord button{width:32px;height:22px} table.items tr.moved{animation:movedRow 1s ease} }
 .txbtn{flex:none;border:0;background:var(--blue-t);color:var(--blue-ink);border-radius:999px;font-size:12px;font-weight:600;padding:5px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:background .15s}
 .txbtn:hover{filter:brightness(.97)}
 .txbtn svg{width:14px;height:14px;transition:transform .2s}
@@ -659,6 +667,8 @@ const ICONS = {
   spark: '<path d="M12 2c.7 5.2 3.6 8.4 9 9.2-5.4.8-8.3 4-9 9.2-.7-5.2-3.6-8.4-9-9.2 5.4-.8 8.3-4 9-9.2z" fill="currentColor" stroke="none"/>',
   chevR: '<path d="m9 18 6-6-6-6"/>',
   chevL: '<path d="m15 18-6-6 6-6"/>',
+  chevU: '<path d="m18 15-6-6-6 6"/>',
+  chevD: '<path d="m6 9 6 6 6-6"/>',
   grid: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 3v18"/>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/>',
   gear: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
@@ -1028,7 +1038,7 @@ function renderCubes() {
 function rowHTML(g, it) {
   const d = diffInfo(g.kind, it.plan, it.actual);
   return `<tr data-id="${it.id}" data-g="${g.key}">
-    <td class="c-name" data-label="סעיף"><div class="namewrap"><input class="in-name" data-f="name" value="${esc(it.name)}" placeholder="שם הסעיף" aria-label="שם הסעיף">${txToggle(g, it)}</div></td>
+    <td class="c-name" data-label="סעיף"><div class="namewrap"><span class="ord"><button type="button" data-act="up" aria-label="הזזת הסעיף למעלה" title="למעלה">${ic('chevU')}</button><button type="button" data-act="down" aria-label="הזזת הסעיף למטה" title="למטה">${ic('chevD')}</button></span><input class="in-name" data-f="name" value="${esc(it.name)}" placeholder="שם הסעיף" aria-label="שם הסעיף">${txToggle(g, it)}</div></td>
     <td data-label="כמה תכננתי"><input class="in-num" data-f="plan" type="number" inputmode="decimal" min="0" step="any" value="${num(it.plan) || ''}" placeholder="0" aria-label="כמה תכננתי"></td>
     <td data-label="כמה בפועל"><input class="in-num" data-f="actual" type="number" inputmode="decimal" min="0" step="any" value="${num(it.actual) || ''}" placeholder="0" aria-label="כמה בפועל"></td>
     <td class="diff" data-label="ההפרש"><span class="chip ${d.cls}">${d.text}</span></td>
@@ -1058,6 +1068,7 @@ function renderTables() {
       </table>
       <div class="tablefoot"><button type="button" class="btn tint" data-act="add" data-g="${g.key}">${ic('plus')}הוספת סעיף</button></div>
     </section>`).join('');
+  markEdges();
 }
 
 function renderHistory() {
@@ -1091,7 +1102,7 @@ function renderAll() { renderTop(); renderSummary(); renderCubes(); renderTables
 let rafPending = false;
 function renderDerived() {
   if (rafPending) return; rafPending = true;
-  requestAnimationFrame(() => { rafPending = false; renderSummary(); renderCubes(); renderHistory(); updateFooters(); });
+  requestAnimationFrame(() => { rafPending = false; renderSummary(); renderCubes(); renderHistory(); updateFooters(); markEdges(); });
 }
 
 /* ================= interactions ================= */
@@ -1756,6 +1767,33 @@ function onMove(e) {
 }
 $('#tables').addEventListener('change', onMove);
 $('#ignoredList').addEventListener('change', onMove);
+
+/* ---------- reorder items (same order in every month) ---------- */
+function applyOrderEverywhere(gk) {
+  const order = curMonth().groups[gk].map(x => (x.name || '').trim());
+  const pos = n => { const i = order.indexOf((n || '').trim()); return i < 0 ? 1e6 : i; };
+  for (const [k, m] of Object.entries(state.months)) {
+    if (k === state.current) continue;
+    m.groups[gk] = m.groups[gk].map((x, i) => [x, i]).sort((a, b) => (pos(a[0].name) - pos(b[0].name)) || (a[1] - b[1])).map(p => p[0]);
+  }
+}
+function markEdges() {
+  document.querySelectorAll('#tables tbody').forEach(tb => {
+    const rows = [...tb.querySelectorAll('tr[data-id]')];
+    rows.forEach((tr, i) => { tr.querySelector('[data-act="up"]').disabled = i === 0; tr.querySelector('[data-act="down"]').disabled = i === rows.length - 1; });
+  });
+}
+$('#tables').addEventListener('click', e => {
+  const b = e.target.closest('[data-act="up"],[data-act="down"]'); if (!b) return;
+  const tr = b.closest('tr[data-id]'), gk = tr.dataset.g, id = tr.dataset.id, dir = b.dataset.act;
+  const arr = curMonth().groups[gk], i = arr.findIndex(x => x.id === id), j = dir === 'up' ? i - 1 : i + 1;
+  if (i < 0 || j < 0 || j >= arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  applyOrderEverywhere(gk);
+  save(); renderTables();
+  const row = document.querySelector(`#tables tr[data-id="${id}"]`);
+  if (row) { row.classList.add('moved'); const btn = row.querySelector(`[data-act="${dir}"]`); (btn && !btn.disabled ? btn : row.querySelector('.in-name')).focus({preventScroll: true}); }
+});
 
 /* ---------- charges marked "לא לספור" ---------- */
 let ignoredOpen = false;
