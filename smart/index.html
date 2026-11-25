@@ -330,6 +330,29 @@ dialog::backdrop{background:rgba(0,0,0,.28);-webkit-backdrop-filter:blur(6px);ba
 .s-new .sect-lbl{flex:1 1 100%}
 .s-new input,.s-new select,.field select{flex:1 1 160px;border:1px solid var(--stroke);border-radius:12px;background:var(--bg2);padding:10px 12px;font-size:15px;min-height:44px;color:var(--fg)}
 .field select{flex:none}
+.namewrap{display:flex;align-items:center;gap:6px}
+.namewrap input{flex:1;min-width:0}
+.txbtn{flex:none;border:0;background:var(--blue-t);color:var(--blue-ink);border-radius:999px;font-size:12px;font-weight:600;padding:5px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:background .15s}
+.txbtn:hover{filter:brightness(.97)}
+.txbtn svg{width:14px;height:14px;transition:transform .2s}
+.txbtn[aria-expanded="true"] svg{transform:rotate(-90deg)}
+table.items tbody tr.txrow:hover{background:transparent}
+table.items tr.txrow td{padding:0 4px 10px}
+.txlist{padding:4px 16px;border-radius:16px;background:var(--field)}
+.txline{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--hair);font-size:14px}
+.txline .d{color:var(--muted);font-size:13px}
+.txline .n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.txline .n small{color:var(--muted);margin-inline-start:6px}
+.txline .a{font-weight:700;white-space:nowrap}
+.txline .a.minus{color:var(--green-ink)}
+.txsum{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 0 6px;font-size:13px;color:var(--muted)}
+.txsum b{color:var(--fg)}
+@media (max-width:760px){
+  table.items tbody tr.txrow{display:block;padding:0;margin:-4px 0 14px;background:transparent;border:0;border-radius:0}
+  table.items tr.txrow td{display:block;padding:0}
+  table.items tr.txrow td::before{display:none}
+  .txline{grid-template-columns:60px minmax(0,1fr) auto;gap:8px}
+}
 .s-hint{margin-top:14px;font-size:14px;color:var(--orange-ink);background:var(--orange-t);border-radius:14px;padding:10px 14px}
 .mlist{max-height:230px;overflow:auto;margin-top:6px}
 .mrow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--hair);font-size:14px}
@@ -992,13 +1015,13 @@ function renderCubes() {
 function rowHTML(g, it) {
   const d = diffInfo(g.kind, it.plan, it.actual);
   return `<tr data-id="${it.id}" data-g="${g.key}">
-    <td class="c-name" data-label="סעיף"><input class="in-name" data-f="name" value="${esc(it.name)}" placeholder="שם הסעיף" aria-label="שם הסעיף"></td>
+    <td class="c-name" data-label="סעיף"><div class="namewrap"><input class="in-name" data-f="name" value="${esc(it.name)}" placeholder="שם הסעיף" aria-label="שם הסעיף">${txToggle(g, it)}</div></td>
     <td data-label="כמה תכננתי"><input class="in-num" data-f="plan" type="number" inputmode="decimal" min="0" step="any" value="${num(it.plan) || ''}" placeholder="0" aria-label="כמה תכננתי"></td>
     <td data-label="כמה בפועל"><input class="in-num" data-f="actual" type="number" inputmode="decimal" min="0" step="any" value="${num(it.actual) || ''}" placeholder="0" aria-label="כמה בפועל"></td>
     <td class="diff" data-label="ההפרש"><span class="chip ${d.cls}">${d.text}</span></td>
     <td class="c-note" data-label="הערות"><input class="in-note" data-f="note" value="${esc(it.note)}" placeholder="הוספת הערה" aria-label="הערות"></td>
     <td class="del"><button type="button" class="delbtn" data-act="del" aria-label="מחיקת הסעיף" title="מחיקה">${ic('trash')}</button></td>
-  </tr>`;
+  </tr>` + txRowHTML(g, it);
 }
 
 function footHTML(g, m) {
@@ -1065,6 +1088,7 @@ $('#tables').addEventListener('input', e => {
   const inp = e.target.closest('input[data-f]'); if (!inp) return;
   const tr = inp.closest('tr'); const it = findItem(tr.dataset.g, tr.dataset.id); if (!it) return;
   const f = inp.dataset.f;
+  if (f === 'name') renameItemTx(tr.dataset.g, it.name || '', inp.value);
   it[f] = (f === 'plan' || f === 'actual') ? Math.max(0, num(inp.value)) : inp.value;
   if (f === 'plan' || f === 'actual') {
     const d = diffInfo(G[tr.dataset.g].kind, it.plan, it.actual);
@@ -1090,6 +1114,7 @@ $('#tables').addEventListener('click', e => {
     const it = findItem(gk, tr.dataset.id);
     if (it && (num(it.plan) || num(it.actual) || it.note) && !confirm(`למחוק את הסעיף "${it.name || 'ללא שם'}"?`)) return;
     m.groups[gk] = m.groups[gk].filter(x => x.id !== tr.dataset.id);
+    if (tr.nextElementSibling && tr.nextElementSibling.classList.contains('txrow')) tr.nextElementSibling.remove();
     tr.remove(); save(); renderDerived(); toast('הסעיף נמחק');
   } else if (act === 'copy') {
     const gk = btn.dataset.g;
@@ -1635,6 +1660,56 @@ $('#sNewForm').addEventListener('submit', e => {
   if (!name) { $('#sNewName').focus(); return; }
   $('#sNewName').value = '';
   choose({g: $('#sNewGroup').value, item: name});
+});
+
+/* ---------- charges list under each budget item ---------- */
+const openTx = new Set();
+function itemTx(g, it) {
+  const name = (it.name || '').trim();
+  if (!name || !state || !state.tx) return [];
+  return state.tx.filter(r => !r.ignore && r.month === state.current && r.g === g.key && (r.item || '').trim() === name).sort((a, b) => a.date.localeCompare(b.date));
+}
+function txToggle(g, it) {
+  const n = itemTx(g, it).length;
+  if (!n) return '';
+  return `<button type="button" class="txbtn" data-act="tx" aria-expanded="${openTx.has(it.id)}" title="הצגת החיובים שנכנסו לסעיף">${n === 1 ? 'חיוב אחד' : n + ' חיובים'}${ic('chevL')}</button>`;
+}
+function txRowHTML(g, it) {
+  if (!openTx.has(it.id)) return '';
+  const recs = itemTx(g, it);
+  if (!recs.length) return '';
+  let sum = 0;
+  const lines = recs.map(r => {
+    const d = txDelta(r); sum += d;
+    const inst = r.inst ? `<small>תשלום ${r.inst.n} מתוך ${r.inst.of}</small>` : '';
+    const refund = r.dir === 'in' && G[r.g].kind !== 'income' ? '<small>זיכוי</small>' : '';
+    return `<div class="txline"><span class="d">${dateLabel(r.date)}</span><span class="n" title="${esc(r.desc)}">${esc(r.desc)}${inst}${refund}</span><span class="a ${d < 0 ? 'minus' : ''}">${fmtC(Math.abs(d))}</span></div>`;
+  }).join('');
+  sum = r2(sum);
+  const manual = r2(num(it.actual) - sum);
+  const note = Math.abs(manual) >= 0.5 ? `<span>מתוך ${fmtC(num(it.actual))} בפועל · ${fmtC(Math.abs(manual))} ${manual > 0 ? 'הוזנו' : 'הורדו'} ידנית</span>` : '';
+  return `<tr class="txrow" data-for="${it.id}"><td colspan="6"><div class="txlist">${lines}<div class="txsum"><span>סה״כ מהקבצים: <b>${fmtC(Math.abs(sum))}</b></span>${note}</div></div></td></tr>`;
+}
+function renameItemTx(gk, oldName, newName) {
+  const o = oldName.trim();
+  if (!o || !state.tx) return;
+  state.tx.forEach(r => { if (r.month === state.current && r.g === gk && (r.item || '').trim() === o) r.item = newName; });
+  Object.values(state.rules || {}).forEach(r => { if (r.g === gk && (r.item || '').trim() === o) r.item = newName; });
+}
+$('#tables').addEventListener('click', e => {
+  const b = e.target.closest('[data-act="tx"]'); if (!b) return;
+  const tr = b.closest('tr'), id = tr.dataset.id, g = G[tr.dataset.g];
+  const it = curMonth().groups[g.key].find(x => x.id === id); if (!it) return;
+  const next = tr.nextElementSibling;
+  if (openTx.has(id)) { openTx.delete(id); if (next && next.classList.contains('txrow')) next.remove(); b.setAttribute('aria-expanded', 'false'); }
+  else { openTx.add(id); tr.insertAdjacentHTML('afterend', txRowHTML(g, it)); b.setAttribute('aria-expanded', 'true'); }
+});
+/* keep an open list in step with edits of "כמה בפועל" */
+$('#tables').addEventListener('input', e => {
+  const tr = e.target.closest('tr[data-id]'); if (!tr || !openTx.has(tr.dataset.id)) return;
+  const it = curMonth().groups[tr.dataset.g].find(x => x.id === tr.dataset.id); if (!it) return;
+  const next = tr.nextElementSibling;
+  if (next && next.classList.contains('txrow')) next.outerHTML = txRowHTML(G[tr.dataset.g], it) || '<tr class="txrow"></tr>';
 });
 
 /* ---------- drop zone ---------- */
