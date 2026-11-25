@@ -2,311 +2,402 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="תקציב">
 <title>תקציב הבית</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=Rubik+Pixels&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
+/* Layout: one calm column of frosted-glass panels over a soft gradient field; summary first, detail below. */
 :root{
-  --ink:#111111;
-  --cream:#FFF8E7;
-  --paper:#F4EAD3;
-  --white:#FFFFFF;
-  --green:#3EE07F;
-  --orange:#FF9A3C;
-  --purple:#B98CFF;
-  --cyan:#5CD8F2;
-  --yellow:#FFE14D;
-  --red:#FF5A5A;
-  --pink:#FF8AD0;
-  --b:3px solid var(--ink);
-  --shadow:6px 6px 0 var(--ink);
-  --shadow-sm:3px 3px 0 var(--ink);
-  --pixel:'Rubik Pixels','Rubik',system-ui,sans-serif;
+  --bg:#F2F2F7; --bg2:#FFFFFF; --fg:#1C1C1E; --muted:#6C6C70; --faint:#AEAEB2;
+  --glass:rgba(255,255,255,.68); --glass-hi:rgba(255,255,255,.88);
+  --stroke:rgba(60,60,67,.11); --hair:rgba(60,60,67,.09);
+  --field:rgba(118,118,128,.09); --field-2:rgba(118,118,128,.16);
+  --hi:inset 0 1px 0 rgba(255,255,255,.7);
+  --shadow:0 1px 2px rgba(15,23,42,.04),0 10px 30px rgba(15,23,42,.06),0 30px 80px rgba(15,23,42,.05);
+  --green:#34C759; --green-ink:#1E8E3E; --green-t:rgba(52,199,89,.14);
+  --orange:#FF9F0A; --orange-ink:#B65C00; --orange-t:rgba(255,159,10,.15);
+  --purple:#AF52DE; --purple-ink:#8834B5; --purple-t:rgba(175,82,222,.13);
+  --teal:#32ADE6; --teal-ink:#0B6E9E; --teal-t:rgba(50,173,230,.14);
+  --red:#FF3B30; --red-ink:#D70015; --red-t:rgba(255,59,48,.12);
+  --blue:#0A84FF; --blue-ink:#0066D6; --blue-t:rgba(10,132,255,.12);
+  --grad:linear-gradient(115deg,#4285F4 0%,#9B72CB 48%,#D96570 100%);
+  --orb1:rgba(66,133,244,.20); --orb2:rgba(155,114,203,.17); --orb3:rgba(217,101,112,.13);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Heebo","Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
 }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#000000; --bg2:#1C1C1E; --fg:#F5F5F7; --muted:#98989F; --faint:#5A5A5F;
+    --glass:rgba(28,28,30,.62); --glass-hi:rgba(44,44,46,.78);
+    --stroke:rgba(255,255,255,.09); --hair:rgba(255,255,255,.07);
+    --field:rgba(118,118,128,.20); --field-2:rgba(118,118,128,.30);
+    --hi:inset 0 1px 0 rgba(255,255,255,.06);
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 20px 50px rgba(0,0,0,.35);
+    --green-ink:#30D158; --orange-ink:#FFB340; --purple-ink:#DA8FFF; --teal-ink:#70D7FF; --red-ink:#FF6961; --blue-ink:#64B5FF;
+    --green-t:rgba(48,209,88,.16); --orange-t:rgba(255,159,10,.17); --purple-t:rgba(191,90,242,.18); --teal-t:rgba(100,210,255,.15); --red-t:rgba(255,69,58,.18); --blue-t:rgba(10,132,255,.2);
+    --orb1:rgba(66,133,244,.28); --orb2:rgba(155,114,203,.24); --orb3:rgba(217,101,112,.18);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#000000; --bg2:#1C1C1E; --fg:#F5F5F7; --muted:#98989F; --faint:#5A5A5F;
+  --glass:rgba(28,28,30,.62); --glass-hi:rgba(44,44,46,.78);
+  --stroke:rgba(255,255,255,.09); --hair:rgba(255,255,255,.07);
+  --field:rgba(118,118,128,.20); --field-2:rgba(118,118,128,.30);
+  --hi:inset 0 1px 0 rgba(255,255,255,.06);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 20px 50px rgba(0,0,0,.35);
+  --green-ink:#30D158; --orange-ink:#FFB340; --purple-ink:#DA8FFF; --teal-ink:#70D7FF; --red-ink:#FF6961; --blue-ink:#64B5FF;
+  --green-t:rgba(48,209,88,.16); --orange-t:rgba(255,159,10,.17); --purple-t:rgba(191,90,242,.18); --teal-t:rgba(100,210,255,.15); --red-t:rgba(255,69,58,.18); --blue-t:rgba(10,132,255,.2);
+  --orb1:rgba(66,133,244,.28); --orb2:rgba(155,114,203,.24); --orb3:rgba(217,101,112,.18);
+  color-scheme:dark;
+}
+
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 body{
-  margin:0;color:var(--ink);font-family:'Rubik',system-ui,sans-serif;font-weight:600;font-size:17px;line-height:1.35;
-  background-color:var(--paper);
-  background-image:radial-gradient(rgba(17,17,17,.22) 1.5px,transparent 1.8px);
-  background-size:22px 22px;
+  margin:0;min-height:100vh;background:var(--bg);color:var(--fg);
+  font-family:var(--font);font-size:16px;font-weight:400;line-height:1.45;letter-spacing:-.005em;
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;
 }
-button,input,select,textarea{font:inherit;color:var(--ink)}
-.wrap{max-width:1200px;margin:0 auto;padding:18px 16px 90px}
-.pixel{font-family:var(--pixel);font-weight:400;letter-spacing:.02em}
-.card{background:var(--cream);border:var(--b);border-radius:24px;box-shadow:var(--shadow);padding:22px}
-.section{margin-top:34px}
-h1,h2,h3{margin:0;font-weight:900;line-height:1.1}
+body::before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(42vmax 42vmax at 92% -8%,var(--orb1),transparent 62%),
+    radial-gradient(38vmax 38vmax at -6% 28%,var(--orb2),transparent 62%),
+    radial-gradient(44vmax 44vmax at 70% 108%,var(--orb3),transparent 62%);
+}
+button,input,select{font:inherit;color:inherit}
+svg.i{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.wrap{max-width:1160px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right)) 96px max(16px,env(safe-area-inset-left))}
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.02em;line-height:1.15;text-wrap:balance}
+.muted{color:var(--muted)}
+.eyebrow{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.01em}
 
-/* buttons & tags */
+.glass{
+  background:var(--glass);border:1px solid var(--stroke);border-radius:28px;
+  box-shadow:var(--shadow),var(--hi);
+  -webkit-backdrop-filter:blur(28px) saturate(180%);backdrop-filter:blur(28px) saturate(180%);
+}
+.section{margin-top:20px}
+.pad{padding:26px}
+
+/* buttons */
 .btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  font-weight:800;font-size:17px;border:var(--b);border-radius:999px;padding:10px 20px;
-  background:var(--white);box-shadow:var(--shadow-sm);cursor:pointer;white-space:nowrap;
-  transition:transform .08s ease,box-shadow .08s ease;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;
+  border:0;border-radius:999px;background:var(--field);color:var(--fg);font-size:15px;font-weight:600;
+  cursor:pointer;white-space:nowrap;transition:background .2s,transform .15s;
 }
-.btn:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)}
-.btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
-.btn:focus-visible,input:focus-visible{outline:3px dashed var(--ink);outline-offset:3px}
-.btn.green{background:var(--green)} .btn.pink{background:var(--pink)} .btn.yellow{background:var(--yellow)}
-.btn.cyan{background:var(--cyan)} .btn.red{background:var(--red)} .btn.purple{background:var(--purple)}
-.btn.round{width:52px;height:52px;padding:0;font-size:24px}
-.btn.small{font-size:15px;padding:7px 14px}
-.tag{
-  display:inline-block;font-family:var(--pixel);font-weight:400;font-size:14px;
-  border:2.5px solid var(--ink);border-radius:999px;padding:4px 12px;background:var(--yellow);
-  box-shadow:2px 2px 0 var(--ink);white-space:nowrap;
-}
-.tag.white{background:var(--white)}
+.btn:hover{background:var(--field-2)}
+.btn:active{transform:scale(.96)}
+.btn:focus-visible,input:focus-visible,.cube:focus-visible,tr[tabindex]:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.btn.primary{background:var(--grad);color:#fff;box-shadow:0 6px 20px rgba(155,114,203,.35)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.tint{background:var(--blue-t);color:var(--blue-ink)}
+.btn.danger{background:var(--red-t);color:var(--red-ink)}
+.btn.icon{width:40px;padding:0}
+.btn.lg{height:52px;padding:0 24px;font-size:17px}
+.btn.sm{height:34px;padding:0 13px;font-size:14px}
 
 /* top bar */
-.topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
-.brand h1{font-size:clamp(26px,4vw,38px)}
-.brand .tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.monthnav{display:flex;align-items:center;gap:10px}
-.monthname{
-  background:var(--yellow);border:var(--b);border-radius:999px;box-shadow:var(--shadow-sm);
-  padding:10px 22px;font-size:clamp(20px,3vw,26px);font-weight:900;min-width:190px;text-align:center;
+.topbar{
+  position:sticky;top:calc(10px + env(safe-area-inset-top));z-index:20;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 12px 10px 12px;border-radius:24px;
 }
-.actions{display:flex;gap:10px;flex-wrap:wrap}
-#todayBtn[hidden]{display:none}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{width:40px;height:40px;border-radius:13px;background:var(--grad);color:#fff;display:grid;place-items:center;flex:none;box-shadow:0 6px 18px rgba(66,133,244,.35)}
+.logo svg{width:22px;height:22px}
+.brand h1{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand .sub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.monthnav{display:flex;align-items:center;gap:4px;background:var(--field);border-radius:999px;padding:4px}
+.monthnav .btn{background:transparent;height:34px;width:34px;padding:0}
+.monthnav .btn:hover{background:var(--glass-hi)}
+.monthname{min-width:128px;text-align:center;font-weight:700;font-size:16px}
+.actions{display:flex;gap:8px;align-items:center}
 
-/* summary */
-.headline{font-size:clamp(34px,6.5vw,68px);font-weight:900;letter-spacing:-.01em}
-.headline mark{background:var(--yellow);color:var(--ink);border:var(--b);border-radius:18px;padding:0 .22em;box-shadow:var(--shadow-sm);display:inline-block;transform:rotate(-1.5deg)}
-.headline mark.neg{background:var(--red)}
-.subline{margin-top:16px;font-size:19px;display:flex;flex-wrap:wrap;gap:10px}
-.subline .chip{border:2.5px solid var(--ink);border-radius:999px;padding:5px 14px;background:var(--white);font-weight:700}
-.charts{display:grid;grid-template-columns:1fr 1.15fr;gap:20px;margin-top:24px}
-.chartbox{background:var(--white);border:var(--b);border-radius:20px;padding:16px;box-shadow:var(--shadow-sm)}
-.chartbox h3{font-size:20px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
-.barwrap{position:relative;height:290px}
-.piegrid{display:grid;grid-template-columns:minmax(150px,230px) 1fr;gap:16px;align-items:center}
-.piewrap{position:relative;height:230px}
-.legend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px;max-height:260px;overflow:auto}
-.legend li{display:grid;grid-template-columns:20px 1fr auto;gap:8px;align-items:center;font-size:15px}
-.legend .sw{width:18px;height:18px;border:2.5px solid var(--ink);border-radius:6px}
-.legend .pct{font-weight:900;background:var(--cream);border:2px solid var(--ink);border-radius:999px;padding:1px 9px;font-size:14px}
-.legend .amt{display:block;font-size:13px;font-weight:600}
-.empty{padding:30px 10px;text-align:center;font-weight:700}
-.tips{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:24px}
-.tip{border:var(--b);border-radius:20px;padding:16px 18px;box-shadow:var(--shadow-sm);font-size:17px;font-weight:700;display:flex;gap:12px;align-items:flex-start}
-.tip .em{font-size:30px;line-height:1}
-.tip:nth-child(1){transform:rotate(-1deg)} .tip:nth-child(2){transform:rotate(.8deg)} .tip:nth-child(3){transform:rotate(-.6deg)}
+/* summary hero */
+.hero{padding:30px 30px 26px}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.headline{margin-top:6px}
+.headline .lbl{font-size:clamp(22px,3vw,30px);font-weight:600;letter-spacing:-.02em}
+.headline .amt{display:block;font-size:clamp(56px,10vw,104px);font-weight:700;letter-spacing:-.045em;line-height:1;margin-top:4px;
+  background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.06em}
+.headline .amt.neg{background:none;color:var(--red-ink)}
+.headline .amt.idle{background:none;color:var(--faint)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-top:26px;border-top:1px solid var(--hair)}
+.stat{padding:16px 16px 4px;border-inline-start:1px solid var(--hair)}
+.stat:first-child{border-inline-start:0;padding-inline-start:0}
+.stat .k{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.stat .k i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.stat .v{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
+.charts{display:grid;grid-template-columns:1fr 1.1fr;gap:16px;margin-top:22px}
+.panel{background:var(--glass-hi);border:1px solid var(--hair);border-radius:22px;padding:18px;min-width:0}
+.panel h3{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.panel h3 svg{color:var(--muted)}
+.legend-row{display:flex;gap:14px;font-size:13px;color:var(--muted);margin:-4px 0 8px}
+.legend-row span{display:inline-flex;align-items:center;gap:6px}
+.legend-row i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.barwrap{position:relative;height:260px}
+.piegrid{display:grid;grid-template-columns:minmax(150px,210px) 1fr;gap:18px;align-items:center}
+.piewrap{position:relative;height:210px}
+.piecenter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center}
+.piecenter small{font-size:12px;color:var(--muted)}
+.piecenter b{font-size:20px;letter-spacing:-.02em}
+.legend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:250px;overflow:auto}
+.legend li{display:grid;grid-template-columns:10px 1fr auto auto;gap:10px;align-items:center;font-size:14px;padding:6px 0;border-bottom:1px solid var(--hair)}
+.legend li:last-child{border-bottom:0}
+.legend .sw{width:10px;height:10px;border-radius:50%}
+.legend .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legend .amt{color:var(--muted);font-size:13px}
+.legend .pct{font-weight:700;min-width:38px;text-align:left}
+.empty{padding:28px 8px;text-align:center;color:var(--muted)}
+.tips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.tip{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:20px;background:var(--glass-hi);border:1px solid var(--hair);font-size:15px}
+.tip .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none}
+.tip .ic svg{width:18px;height:18px}
+.t-warn .ic{background:var(--orange-t);color:var(--orange-ink)}
+.t-good .ic{background:var(--green-t);color:var(--green-ink)}
+.t-top .ic{background:var(--blue-t);color:var(--blue-ink)}
+.t-save .ic{background:var(--teal-t);color:var(--teal-ink)}
+.t-info .ic{background:var(--grad);color:#fff}
 
 /* cubes */
-.cubes{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.cubes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .cube{
-  background:var(--c);border:var(--b);border-radius:26px;box-shadow:var(--shadow);padding:20px;cursor:pointer;
-  transform:rotate(var(--r));transition:transform .15s ease,box-shadow .15s ease;text-align:right;
-  display:flex;flex-direction:column;gap:10px;min-height:250px;
+  text-align:right;cursor:pointer;padding:20px;display:flex;flex-direction:column;gap:6px;color:var(--fg);
+  transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s;
 }
-.cube:hover{transform:rotate(0deg) translate(-3px,-3px);box-shadow:9px 9px 0 var(--ink)}
-.cube:active{transform:translate(4px,4px);box-shadow:2px 2px 0 var(--ink)}
-.cube .top{display:flex;justify-content:space-between;align-items:center}
-.cube .em{font-size:34px}
-.cube .amount{font-size:clamp(32px,3.4vw,42px);font-weight:900;line-height:1}
-.cube .of{font-size:16px;font-weight:700}
-.bar{height:22px;border:var(--b);border-radius:999px;background:var(--white);overflow:hidden}
-.bar span{display:block;height:100%;background:var(--ink);border-left:var(--b);border-radius:999px}
-.bar.over span{background:repeating-linear-gradient(-45deg,var(--red) 0 8px,var(--ink) 8px 12px)}
-.bar.full span{background:repeating-linear-gradient(-45deg,var(--yellow) 0 8px,var(--ink) 8px 12px)}
-.cube .status{align-self:flex-start;font-weight:800;border:2.5px solid var(--ink);border-radius:999px;padding:5px 14px;background:var(--white);font-size:16px}
-.cube .status.bad{background:var(--red)}
-.cube .hint{margin-top:auto;font-size:13px}
+.cube:hover{transform:translateY(-3px)}
+.cube:active{transform:scale(.98)}
+.cube .top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.cube .ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--t);color:var(--ink)}
+.cube .ttl{font-size:15px;font-weight:600}
+.cube .chev{margin-inline-start:auto;color:var(--faint)}
+.cube .amount{font-size:clamp(28px,2.8vw,34px);font-weight:700;letter-spacing:-.03em;line-height:1.05}
+.cube .of{font-size:14px;color:var(--muted)}
+.bar{height:6px;border-radius:999px;background:var(--field-2);overflow:hidden;margin:10px 0 8px}
+.bar span{display:block;height:100%;border-radius:999px;background:var(--c);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.bar.over span{background:var(--red)}
+.chip{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;font-size:13px;font-weight:600;border-radius:999px;padding:4px 10px;white-space:nowrap}
+.chip.good{background:var(--green-t);color:var(--green-ink)}
+.chip.bad{background:var(--red-t);color:var(--red-ink)}
+.chip.neutral{background:var(--field);color:var(--muted)}
+.chip.info{background:var(--field);color:var(--fg)}
 
 /* tables */
-.tablecard{scroll-margin-top:20px;margin-top:30px}
-.tablecard.flash{animation:flash 1s ease}
-@keyframes flash{0%,100%{box-shadow:var(--shadow)}40%{box-shadow:12px 12px 0 var(--c)}}
-.tablehead{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;margin-bottom:16px}
-.tablehead h2{font-size:clamp(24px,3vw,30px);background:var(--c);border:var(--b);border-radius:999px;padding:8px 22px;box-shadow:var(--shadow-sm);display:inline-flex;gap:10px;align-items:center}
-table.items{width:100%;border-collapse:separate;border-spacing:0 8px}
-table.items th{font-family:var(--pixel);font-weight:400;font-size:14px;text-align:right;padding:4px 8px}
-table.items td{padding:6px 6px;vertical-align:middle}
-table.items tbody tr td{background:var(--white);border-top:var(--b);border-bottom:var(--b)}
-table.items tbody tr td:first-child{border-right:var(--b);border-radius:0 16px 16px 0}
-table.items tbody tr td:last-child{border-left:var(--b);border-radius:16px 0 0 16px}
+.tablecard{margin-top:20px;padding:24px;scroll-margin-top:96px}
+.tablecard.flash{animation:flash 1.1s ease}
+@keyframes flash{0%,100%{box-shadow:var(--shadow),var(--hi)}35%{box-shadow:0 0 0 3px var(--c),var(--shadow)}}
+.tablehead{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;margin-bottom:10px}
+.th-title{display:flex;align-items:center;gap:12px}
+.th-title .ic{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--t);color:var(--ink)}
+.th-title h2{font-size:22px}
+.th-title .sub{font-size:13px;color:var(--muted)}
+table.items{width:100%;border-collapse:collapse}
+table.items th{font-size:12px;font-weight:600;color:var(--muted);text-align:right;padding:10px 8px;border-bottom:1px solid var(--hair)}
+table.items td{padding:6px 4px;border-bottom:1px solid var(--hair);vertical-align:middle}
+table.items tbody tr{transition:background .15s}
+table.items tbody tr:hover{background:var(--field)}
 table.items input{
-  width:100%;border:2.5px solid var(--ink);border-radius:12px;background:var(--cream);padding:8px 10px;font-weight:700;font-size:17px;
+  width:100%;border:0;border-radius:10px;background:transparent;padding:9px 10px;font-size:15px;font-weight:500;
+  transition:background .15s,box-shadow .15s;
 }
-table.items input:focus{background:var(--yellow);outline:none}
-table.items input.in-num{max-width:140px}
-table.items input.in-note{font-weight:500;font-size:15px}
-.diff{white-space:nowrap}
-.pill{display:inline-block;border:2.5px solid var(--ink);border-radius:999px;padding:4px 12px;font-weight:800;font-size:15px;white-space:nowrap}
-.pill.good{background:var(--green)} .pill.bad{background:var(--red)} .pill.neutral{background:#EDE6D6}
-td.del{width:56px;text-align:center}
-.delbtn{width:40px;height:40px;border:2.5px solid var(--ink);border-radius:999px;background:var(--white);cursor:pointer;font-size:18px;box-shadow:2px 2px 0 var(--ink)}
-.delbtn:hover{background:var(--red)}
-table.items tfoot td{padding:12px 8px;font-weight:900;font-size:19px}
-table.items tfoot tr td{background:var(--c);border-top:var(--b);border-bottom:var(--b)}
-table.items tfoot tr td:first-child{border-right:var(--b);border-radius:0 16px 16px 0}
-table.items tfoot tr td:last-child{border-left:var(--b);border-radius:16px 0 0 16px}
-.tablefoot{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap}
+table.items input:hover{background:var(--field)}
+table.items input:focus{background:var(--bg2);box-shadow:0 0 0 2px var(--blue);outline:none}
+table.items input::placeholder{color:var(--faint)}
+table.items .in-name{font-weight:600}
+table.items .in-num{max-width:130px;font-weight:600}
+table.items .in-note{color:var(--muted);font-size:14px}
+td.diff{white-space:nowrap}
+td.del{width:44px;text-align:center}
+.delbtn{width:34px;height:34px;border:0;border-radius:50%;background:transparent;color:var(--faint);cursor:pointer;display:inline-grid;place-items:center;transition:background .15s,color .15s}
+.delbtn:hover{background:var(--red-t);color:var(--red-ink)}
+.delbtn svg{width:17px;height:17px}
+table.items tfoot td{padding:14px 12px;font-weight:700;font-size:16px;border-bottom:0}
 .foot-label{display:none}
+.tablefoot{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap}
 
 /* history */
-table.hist{width:100%;border-collapse:separate;border-spacing:0 8px}
-table.hist th{font-family:var(--pixel);font-weight:400;font-size:14px;text-align:right;padding:4px 10px}
-table.hist td{background:var(--white);border-top:var(--b);border-bottom:var(--b);padding:12px 10px;font-weight:800}
-table.hist td:first-child{border-right:var(--b);border-radius:0 16px 16px 0}
-table.hist td:last-child{border-left:var(--b);border-radius:16px 0 0 16px;width:32%}
-table.hist tr.row{cursor:pointer}
-table.hist tr.row:hover td{background:var(--cream)}
-table.hist tr.sel td{background:var(--yellow)}
-.hbar{display:flex;height:24px;border:var(--b);border-radius:999px;overflow:hidden;background:var(--white)}
-.hbar span{display:block;height:100%}
-.hbar span+span{border-right:2.5px solid var(--ink)}
-.hlegend{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;font-size:14px}
-.hlegend i{display:inline-block;width:14px;height:14px;border:2px solid var(--ink);border-radius:4px;vertical-align:-2px;margin-left:5px}
-.pos{} .negtxt{color:var(--ink);background:var(--red);border:2px solid var(--ink);border-radius:999px;padding:1px 9px}
+.hist{width:100%;border-collapse:collapse}
+.hist th{font-size:12px;font-weight:600;color:var(--muted);text-align:right;padding:10px 10px;border-bottom:1px solid var(--hair)}
+.hist td{padding:14px 10px;border-bottom:1px solid var(--hair);font-weight:600;font-size:15px}
+.hist tr.row{cursor:pointer;transition:background .15s}
+.hist tr.row:hover{background:var(--field)}
+.hist tr.sel{background:var(--blue-t)}
+.hist tr.sel td.h-month{color:var(--blue-ink)}
+.hist td.h-bar{width:30%}
+.hbar{display:flex;height:8px;border-radius:999px;overflow:hidden;background:var(--field-2);gap:2px}
+.hbar span{display:block;height:100%;border-radius:999px}
+.hlegend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:13px;color:var(--muted)}
+.hlegend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px}
+.negtxt{color:var(--red-ink)}
 
-/* modal + onboarding */
-dialog.card{max-width:560px;width:calc(100% - 32px);padding:26px}
-dialog::backdrop{background:rgba(17,17,17,.45)}
+/* dialog, onboarding, toast */
+dialog{max-width:540px;width:calc(100% - 32px);padding:26px;border:1px solid var(--stroke);border-radius:30px;background:var(--glass-hi);color:var(--fg);box-shadow:var(--shadow);
+  -webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%)}
+dialog::backdrop{background:rgba(0,0,0,.28);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.dlg-head{display:flex;justify-content:space-between;align-items:center}
 .field{display:flex;flex-direction:column;gap:6px;margin-top:14px}
-.field label{font-family:var(--pixel);font-size:14px}
-.field input,.field select{border:var(--b);border-radius:14px;background:var(--white);padding:11px 14px;font-weight:700;font-size:18px}
+.field label{font-size:13px;font-weight:600;color:var(--muted)}
+.field input{border:1px solid var(--stroke);border-radius:14px;background:var(--bg2);padding:12px 14px;font-size:16px;font-weight:500}
+.field input:focus{outline:none;box-shadow:0 0 0 3px var(--blue-t);border-color:var(--blue)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.modal-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
-.divider{border:0;border-top:3px dashed var(--ink);margin:22px 0}
-#onboard{position:fixed;inset:0;z-index:50;overflow:auto;padding:24px 16px;
-  background-color:var(--paper);background-image:radial-gradient(rgba(17,17,17,.22) 1.5px,transparent 1.8px);background-size:22px 22px}
-#onboard[hidden]{display:none}
-.ob{max-width:820px;margin:20px auto}
-.ob h1{font-size:clamp(32px,5.5vw,56px)}
-.ob p.lead{font-size:20px;margin:12px 0 0}
-.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:24px}
-.choice{border:var(--b);border-radius:24px;background:var(--white);box-shadow:var(--shadow);padding:22px 14px;cursor:pointer;text-align:center;transition:transform .12s}
-.choice .em{font-size:52px;display:block}
-.choice b{display:block;font-size:24px;font-weight:900;margin-top:6px}
-.choice small{display:block;font-size:14px;margin-top:4px;font-weight:600}
-.choice:nth-child(1){--r:-1.5deg}.choice:nth-child(2){--r:1deg}.choice:nth-child(3){--r:-.8deg}
-.choice{transform:rotate(var(--r))}
-.choice:hover{transform:rotate(0) translate(-2px,-2px)}
-.choice[aria-pressed="true"]{background:var(--yellow);transform:rotate(0) translate(3px,3px);box-shadow:var(--shadow-sm)}
-.stepper{display:flex;align-items:center;gap:12px}
-.stepper output{font-size:30px;font-weight:900;min-width:44px;text-align:center}
-#obDetails[hidden]{display:none}
-.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(200%);visibility:hidden;background:var(--yellow);border:var(--b);border-radius:999px;box-shadow:var(--shadow-sm);padding:12px 24px;font-weight:800;z-index:100;transition:transform .25s ease;max-width:calc(100% - 32px);text-align:center}
-.toast.show{transform:translateX(-50%) translateY(0);visibility:visible}
-.busy{position:fixed;inset:0;background:rgba(17,17,17,.4);z-index:90;display:flex;align-items:center;justify-content:center}
-.busy[hidden]{display:none}
-.busy .card{font-size:22px;font-weight:900}
+.modal-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.divider{border:0;border-top:1px solid var(--hair);margin:22px 0 16px}
+.sect-lbl{font-size:13px;font-weight:600;color:var(--muted)}
+#onboard{position:fixed;inset:0;z-index:50;overflow:auto;background:var(--bg);padding:max(24px,env(safe-area-inset-top)) 16px 32px}
+#onboard::before{content:"";position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(50vmax 50vmax at 85% 0%,var(--orb1),transparent 60%),radial-gradient(45vmax 45vmax at 0% 60%,var(--orb2),transparent 60%),radial-gradient(45vmax 45vmax at 90% 100%,var(--orb3),transparent 60%)}
+.ob{position:relative;max-width:780px;margin:4vh auto 0;padding:36px}
+.ob .logo{width:56px;height:56px;border-radius:18px}
+.ob .logo svg{width:30px;height:30px}
+.ob h1{font-size:clamp(32px,5.5vw,52px);letter-spacing:-.035em;margin-top:22px}
+.gradtext{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ob p.lead{font-size:18px;color:var(--muted);margin:10px 0 0;max-width:560px}
+.choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:28px}
+.choice{
+  border:2px solid transparent;border-radius:24px;background:var(--glass-hi);padding:22px 16px;cursor:pointer;text-align:right;
+  display:flex;flex-direction:column;gap:4px;box-shadow:0 1px 0 var(--hair);transition:transform .2s,box-shadow .2s;color:var(--fg)
+}
+.choice:hover{transform:translateY(-2px)}
+.choice .ic{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:var(--field);margin-bottom:10px}
+.choice .ic svg{width:24px;height:24px}
+.choice b{font-size:19px;font-weight:700}
+.choice small{font-size:14px;color:var(--muted)}
+.choice[aria-pressed="true"]{background:linear-gradient(var(--bg2),var(--bg2)) padding-box,var(--grad) border-box;box-shadow:0 10px 30px rgba(155,114,203,.25)}
+.choice[aria-pressed="true"] .ic{background:var(--grad);color:#fff}
+.stepper{display:flex;align-items:center;gap:14px}
+.stepper output{font-size:28px;font-weight:700;min-width:40px;text-align:center}
+.toast{
+  position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translate(-50%,-160%);
+  background:#000;color:#fff;border-radius:999px;padding:12px 22px;font-size:15px;font-weight:600;z-index:100;
+  box-shadow:0 10px 40px rgba(0,0,0,.3);transition:transform .45s cubic-bezier(.2,.9,.25,1.15);max-width:calc(100% - 32px);text-align:center;visibility:hidden
+}
+.toast.show{transform:translate(-50%,0);visibility:visible}
+.busy{position:fixed;inset:0;background:rgba(0,0,0,.25);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);z-index:90;display:flex;align-items:center;justify-content:center}
+.busy .box{display:flex;align-items:center;gap:14px;padding:18px 24px;font-weight:600;font-size:16px}
+.spin{width:26px;height:26px;border-radius:50%;background:conic-gradient(from 0deg,#4285F4,#9B72CB,#D96570,transparent 80%);-webkit-mask:radial-gradient(circle,transparent 55%,#000 57%);mask:radial-gradient(circle,transparent 55%,#000 57%);animation:sp 0.9s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
 
-/* PDF report (rendered off-screen) */
-#report{position:fixed;top:0;left:-10000px;width:780px;background:var(--cream);font-family:'Rubik',sans-serif;color:var(--ink)}
-#report .rs{padding:14px 22px;background:var(--cream)}
-#report .rcard{background:var(--white);border:3px solid var(--ink);border-radius:18px;padding:16px;box-shadow:4px 4px 0 var(--ink)}
-#report h2{font-size:22px;margin-bottom:10px}
-#report .rmetrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-#report .rm{border:3px solid var(--ink);border-radius:16px;padding:12px;box-shadow:3px 3px 0 var(--ink)}
-#report .rm .t{font-size:14px;font-weight:800}
-#report .rm .v{font-size:24px;font-weight:900;margin:4px 0}
-#report .rm .s{font-size:12px;font-weight:600}
-#report table{width:100%;border-collapse:collapse;font-size:14px}
-#report th{background:var(--ink);color:var(--white);padding:7px 8px;text-align:right;font-weight:800}
-#report td{border-bottom:2px solid var(--ink);padding:7px 8px;font-weight:600}
-#report tr.tot td{font-weight:900;background:var(--c)}
-#report .rcharts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-#report ul{margin:0;padding:0;list-style:none;font-size:15px;font-weight:600}
-#report li{margin:7px 0}
+/* PDF report (off-screen, always light, no modern color functions) */
+#report{position:fixed;top:0;left:-10000px;width:780px;background:#F5F5F7;font-family:var(--font);color:#1C1C1E}
+#report .rs{padding:12px 24px;background:#F5F5F7}
+#report .rcard{background:#FFFFFF;border:1px solid #E5E5EA;border-radius:20px;padding:18px}
+#report h2{font-size:17px;margin-bottom:10px;font-weight:700}
+#report .rmetrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+#report .rm{background:#FFFFFF;border:1px solid #E5E5EA;border-radius:16px;padding:14px}
+#report .rm .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px}
+#report .rm .t{font-size:13px;color:#6C6C70;font-weight:600}
+#report .rm .v{font-size:22px;font-weight:700;margin:4px 0}
+#report .rm .s{font-size:12px;color:#6C6C70}
+#report table{width:100%;border-collapse:collapse;font-size:13px}
+#report th{color:#6C6C70;font-weight:600;padding:7px 8px;text-align:right;border-bottom:1px solid #E5E5EA;font-size:12px}
+#report td{border-bottom:1px solid #F0F0F3;padding:7px 8px}
+#report tr.tot td{font-weight:700;border-bottom:0}
+#report .rcharts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#report .ins{margin:0;padding:0;list-style:none;font-size:14px}
+#report .ins li{padding:7px 0;border-bottom:1px solid #F0F0F3}
+#report .ins li:last-child{border-bottom:0}
 
 /* responsive */
 @media (max-width:1000px){
-  .cubes{grid-template-columns:repeat(2,1fr)}
+  .cubes{grid-template-columns:repeat(2,minmax(0,1fr))}
   .charts{grid-template-columns:1fr}
+  .actions .lbl{display:none}
+  .actions .btn:not(.icon){width:40px;padding:0}
 }
 @media (max-width:760px){
-  body{font-size:16px}
-  .card{padding:16px;border-radius:20px}
-  .topbar{flex-direction:column;align-items:stretch}
-  .monthnav{justify-content:space-between}
-  .monthname{flex:1;min-width:0}
-  .actions{justify-content:center}
-  .actions .btn{flex:1}
-  .actions .btn.round{flex:0 0 52px}
+  .topbar{flex-wrap:wrap;padding:10px;top:calc(6px + env(safe-area-inset-top))}
+  .brand{flex:1 1 0}
+  .brand h1{font-size:16px}
+  .actions{gap:6px}
+  .actions .btn{width:36px;height:36px}
+  .monthnav{order:3;flex:1 1 100%;justify-content:space-between}
+  .hero{padding:22px 20px}
+  .pad,.tablecard{padding:18px}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stat:nth-child(3){border-inline-start:0;padding-inline-start:0}
   .tips{grid-template-columns:1fr}
   .piegrid{grid-template-columns:1fr}
-  .piewrap{height:210px}
-  .cubes{grid-template-columns:1fr;gap:18px}
-  .cube{min-height:0}
+  .cubes{grid-template-columns:1fr;gap:12px}
   .choices{grid-template-columns:1fr}
+  .ob{padding:24px}
   .row2{grid-template-columns:1fr}
 
-  /* table rows become cards */
   table.items thead{display:none}
   table.items,table.items tbody,table.items tfoot{display:block}
-  table.items tbody tr{
-    display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative;
-    background:var(--white);border:var(--b);border-radius:18px;box-shadow:var(--shadow-sm);padding:14px;margin-bottom:16px;
-  }
-  table.items tbody tr td,table.items tbody tr td:first-child,table.items tbody tr td:last-child{
-    display:block;border:0;border-radius:0;padding:0;background:transparent
-  }
-  table.items td::before{content:attr(data-label);display:block;font-family:var(--pixel);font-size:13px;margin-bottom:4px}
-  table.items td.c-name{grid-column:1 / -1;padding-left:52px}
+  table.items tbody tr{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;position:relative;
+    background:var(--glass-hi);border:1px solid var(--hair);border-radius:20px;padding:12px;margin-bottom:10px}
+  table.items tbody tr:hover{background:var(--glass-hi)}
+  table.items td{display:block;border:0;padding:0}
+  table.items td::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;color:var(--muted);margin:0 10px 2px}
+  table.items td.c-name{grid-column:1 / -1;padding-left:40px}
+  table.items td.c-name::before{display:none}
   table.items td.c-note,table.items td.diff{grid-column:1 / -1}
-  table.items input.in-num{max-width:none}
-  table.items td.del{position:absolute;top:12px;left:12px;width:auto}
+  table.items td.diff::before{display:none}
+  table.items td.diff{padding:0 6px}
+  table.items input{background:var(--field)}
+  table.items .in-name{background:transparent;font-size:17px}
+  table.items .in-num{max-width:none}
+  table.items td.del{position:absolute;top:10px;left:8px;width:auto}
   table.items td.del::before{display:none}
-  table.items tfoot tr{display:grid;grid-template-columns:1fr 1fr;gap:6px;border:var(--b);border-radius:18px;background:var(--c);padding:12px 14px;box-shadow:var(--shadow-sm)}
-  table.items tfoot tr td,table.items tfoot tr td:first-child,table.items tfoot tr td:last-child{display:block;border:0;border-radius:0;padding:0;background:transparent;font-size:17px}
-  table.items tfoot td.ft-title{grid-column:1 / -1;font-size:20px}
+  table.items tfoot tr{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;border-radius:20px;background:var(--field);padding:14px}
+  table.items tfoot td{display:block;padding:0;font-size:16px}
+  table.items tfoot td.ft-title{grid-column:1 / -1;font-size:17px}
   table.items tfoot td.ft-empty{display:none}
-  .foot-label{display:block;font-family:var(--pixel);font-weight:400;font-size:12px}
+  .foot-label{display:block;font-size:12px;font-weight:600;color:var(--muted)}
 
-  table.hist thead{display:none}
-  table.hist,table.hist tbody{display:block}
-  table.hist tr.row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;border:var(--b);border-radius:18px;background:var(--white);padding:12px;margin-bottom:12px;box-shadow:var(--shadow-sm)}
-  table.hist tr.sel{background:var(--yellow)}
-  table.hist td,table.hist td:first-child,table.hist td:last-child{display:block;border:0;border-radius:0;padding:0;background:transparent!important;width:auto;font-size:15px}
-  table.hist td::before{content:attr(data-label);display:block;font-family:var(--pixel);font-weight:400;font-size:12px}
-  table.hist td.h-month{grid-column:1 / -1;font-size:19px}
-  table.hist td.h-month::before{display:none}
-  table.hist td.h-bar{grid-column:1 / -1}
-  table.hist td.h-bar::before{display:none}
+  .hist thead{display:none}
+  .hist,.hist tbody{display:block}
+  .hist tr.row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 8px;padding:14px 4px;border-bottom:1px solid var(--hair)}
+  .hist tr.sel{border-radius:16px;padding-inline:10px}
+  .hist td{display:block;border:0;padding:0;font-size:14px;width:auto!important}
+  .hist td::before{content:attr(data-label);display:block;font-size:11px;font-weight:600;color:var(--muted)}
+  .hist td.h-month{grid-column:1 / -1;font-size:17px;margin-bottom:2px}
+  .hist td.h-month::before,.hist td.h-bar::before{display:none}
+  .hist td.h-bar{grid-column:1 / -1;margin-top:6px}
 }
-@media print{ .actions,#todayBtn{display:none} }
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
 
 <!-- ============ ONBOARDING ============ -->
 <div id="onboard" hidden>
-  <div class="ob">
-    <div class="card">
-      <span class="tag">ברוכים הבאים 👋</span>
-      <h1 style="margin-top:14px">בואו נבנה את התקציב שלכם</h1>
-      <p class="lead">מי גר בבית? לפי הבחירה נכין לכם רשימת סעיפים מתאימה. אפשר לשנות הכול אחר כך.</p>
-      <div class="choices" role="group" aria-label="סוג משק הבית">
-        <button type="button" class="choice" data-type="single" aria-pressed="false"><span class="em">🧍</span><b>רווק/ה</b><small>משק בית של אדם אחד</small></button>
-        <button type="button" class="choice" data-type="couple" aria-pressed="false"><span class="em">💑</span><b>זוג</b><small>שתי הכנסות, בית אחד</small></button>
-        <button type="button" class="choice" data-type="family" aria-pressed="false"><span class="em">👨‍👩‍👧</span><b>משפחה עם ילדים</b><small>גן, צהרון, חוגים וקצבת ילדים</small></button>
+  <div class="ob glass">
+    <div class="logo" data-icon="spark"></div>
+    <h1>בואו נבנה את <span class="gradtext">התקציב</span> שלכם</h1>
+    <p class="lead">מי גר בבית? לפי הבחירה נכין רשימת סעיפים מתאימה. אפשר לשנות הכול אחר כך.</p>
+    <div class="choices" role="group" aria-label="סוג משק הבית">
+      <button type="button" class="choice" data-type="single" aria-pressed="false"><span class="ic" data-icon="user"></span><b>רווק/ה</b><small>משק בית של אדם אחד</small></button>
+      <button type="button" class="choice" data-type="couple" aria-pressed="false"><span class="ic" data-icon="users"></span><b>זוג</b><small>שתי הכנסות, בית אחד</small></button>
+      <button type="button" class="choice" data-type="family" aria-pressed="false"><span class="ic" data-icon="family"></span><b>משפחה עם ילדים</b><small>גן, צהרון, חוגים וקצבת ילדים</small></button>
+    </div>
+    <div id="obDetails" hidden>
+      <hr class="divider">
+      <div id="obNames"></div>
+      <div class="field" id="obKidsField" hidden>
+        <label>כמה ילדים?</label>
+        <div class="stepper">
+          <button type="button" class="btn icon" id="kidsMinus" aria-label="פחות">−</button>
+          <output id="kidsOut">2</output>
+          <button type="button" class="btn icon" id="kidsPlus" aria-label="יותר">+</button>
+        </div>
       </div>
-      <div id="obDetails" hidden>
-        <hr class="divider">
-        <div id="obNames"></div>
-        <div class="field" id="obKidsField" hidden>
-          <label>כמה ילדים?</label>
-          <div class="stepper">
-            <button type="button" class="btn round" id="kidsMinus" aria-label="פחות">−</button>
-            <output id="kidsOut">2</output>
-            <button type="button" class="btn round" id="kidsPlus" aria-label="יותר">+</button>
-          </div>
-        </div>
-        <div class="modal-actions" style="margin-top:28px">
-          <button type="button" class="btn yellow" id="obStart">✨ להתחיל עם דף נקי</button>
-          <button type="button" class="btn cyan" id="obSample">🎲 למלא נתוני דוגמה ל-6 חודשים</button>
-        </div>
+      <div class="modal-actions" style="margin-top:28px">
+        <button type="button" class="btn primary lg" id="obStart">להתחיל עם דף נקי</button>
+        <button type="button" class="btn lg" id="obSample">למלא נתוני דוגמה ל-6 חודשים</button>
       </div>
     </div>
   </div>
@@ -315,38 +406,42 @@ dialog::backdrop{background:rgba(17,17,17,.45)}
 <!-- ============ APP ============ -->
 <div class="wrap" id="app">
   <!-- 1. top bar -->
-  <header class="card topbar">
+  <header class="glass topbar">
     <div class="brand">
-      <h1 id="brandTitle">התקציב שלנו</h1>
-      <div class="tags" id="brandTags"></div>
+      <div class="logo" data-icon="spark"></div>
+      <div style="min-width:0">
+        <h1 id="brandTitle">התקציב שלנו</h1>
+        <div class="sub" id="brandSub"></div>
+      </div>
     </div>
     <div class="monthnav">
-      <button class="btn round yellow" id="prevMonth" aria-label="החודש הקודם" title="החודש הקודם">→</button>
+      <button class="btn" id="prevMonth" aria-label="החודש הקודם" title="החודש הקודם" data-icon="chevR"></button>
       <div class="monthname" id="monthName">—</div>
-      <button class="btn round yellow" id="nextMonth" aria-label="החודש הבא" title="החודש הבא">←</button>
+      <button class="btn" id="nextMonth" aria-label="החודש הבא" title="החודש הבא" data-icon="chevL"></button>
     </div>
     <div class="actions">
-      <button class="btn small white" id="todayBtn" hidden>החודש הנוכחי</button>
-      <button class="btn green" id="xlsBtn">📊 ייצוא לאקסל</button>
-      <button class="btn pink" id="pdfBtn">📄 דוח PDF</button>
-      <button class="btn round" id="settingsBtn" aria-label="הגדרות" title="הגדרות">⚙️</button>
+      <button class="btn sm tint" id="todayBtn" hidden>היום</button>
+      <button class="btn" id="xlsBtn" title="ייצוא לאקסל" aria-label="ייצוא לאקסל"><span data-icon="grid"></span><span class="lbl">אקסל</span></button>
+      <button class="btn" id="pdfBtn" title="ייצוא דוח PDF" aria-label="ייצוא דוח PDF"><span data-icon="file"></span><span class="lbl">PDF</span></button>
+      <button class="btn icon" id="settingsBtn" aria-label="הגדרות" title="הגדרות" data-icon="gear"></button>
     </div>
   </header>
 
   <!-- 2. summary -->
-  <section class="card section" id="summary">
-    <span class="tag" id="sumTag">סיכום החודש</span>
-    <div class="headline" id="headline" style="margin-top:14px"></div>
-    <div class="subline" id="subline"></div>
+  <section class="glass hero section" id="summary">
+    <div class="eyebrow" id="sumTag">סיכום החודש</div>
+    <div class="headline" id="headline"></div>
+    <div class="stats" id="stats"></div>
     <div class="charts">
-      <div class="chartbox">
-        <h3>📊 נכנס, יצא ונחסך <span class="tag white">תכנון מול בפועל</span></h3>
+      <div class="panel">
+        <h3><span data-icon="bars"></span>נכנס, יצא ונחסך</h3>
+        <div class="legend-row"><span><i style="background:var(--field-2)"></i>תכננתי</span><span><i style="background:var(--fg)"></i>בפועל</span></div>
         <div class="barwrap"><canvas id="barChart" aria-label="גרף הכנסות הוצאות וחיסכון"></canvas></div>
       </div>
-      <div class="chartbox">
-        <h3>🍩 על מה הלך הכסף?</h3>
+      <div class="panel">
+        <h3><span data-icon="pie"></span>על מה הלך הכסף</h3>
         <div class="piegrid">
-          <div class="piewrap"><canvas id="pieChart" aria-label="התפלגות ההוצאות"></canvas></div>
+          <div class="piewrap"><canvas id="pieChart" aria-label="התפלגות ההוצאות"></canvas><div class="piecenter" id="pieCenter"></div></div>
           <ul class="legend" id="pieLegend"></ul>
         </div>
       </div>
@@ -361,63 +456,93 @@ dialog::backdrop{background:rgba(17,17,17,.45)}
   <div id="tables"></div>
 
   <!-- 5. history -->
-  <section class="card section" id="history">
+  <section class="glass tablecard" id="history" style="--t:var(--blue-t);--ink:var(--blue-ink);--c:var(--blue)">
     <div class="tablehead">
-      <h2 style="--c:var(--yellow)">🗓️ 6 החודשים האחרונים</h2>
-      <span class="tag white">לחצו על חודש כדי לעבור אליו</span>
+      <div class="th-title"><span class="ic" data-icon="calendar"></span><div><h2>6 החודשים האחרונים</h2><div class="sub">לחצו על חודש כדי לעבור אליו</div></div></div>
     </div>
     <table class="hist">
-      <thead><tr><th>חודש</th><th>נכנס</th><th>הוצאתי</th><th>חסכתי</th><th>נשאר</th><th>איך זה נראה</th></tr></thead>
+      <thead><tr><th>חודש</th><th>נכנס</th><th>הוצאתי</th><th>חסכתי</th><th>נשאר</th><th>תמונת מצב</th></tr></thead>
       <tbody id="histBody"></tbody>
     </table>
-    <div class="hlegend"><span><i style="background:var(--orange)"></i>הוצאות</span><span><i style="background:var(--cyan)"></i>חיסכון</span><span><i style="background:var(--green)"></i>נשאר</span><span><i style="background:var(--red)"></i>חוסר</span></div>
+    <div class="hlegend"><span><i style="background:var(--orange)"></i>הוצאות</span><span><i style="background:var(--teal)"></i>חיסכון</span><span><i style="background:var(--green)"></i>נשאר</span><span><i style="background:var(--red)"></i>חוסר</span></div>
   </section>
 </div>
 
 <!-- settings dialog -->
-<dialog class="card" id="settings">
-  <div style="display:flex;justify-content:space-between;align-items:center">
-    <h2>⚙️ הגדרות</h2>
-    <button class="btn round small" id="closeSettings" aria-label="סגירה" style="width:44px;height:44px">✕</button>
+<dialog id="settings">
+  <div class="dlg-head">
+    <h2 style="font-size:24px">הגדרות</h2>
+    <button class="btn icon" id="closeSettings" aria-label="סגירה" data-icon="x"></button>
   </div>
   <div id="setFields"></div>
-  <div class="modal-actions"><button class="btn yellow" id="saveSettings">💾 שמירה</button></div>
+  <div class="modal-actions"><button class="btn primary" id="saveSettings">שמירה</button></div>
   <hr class="divider">
-  <span class="tag white">גיבוי</span>
-  <p style="margin:10px 0 0;font-weight:500">הנתונים נשמרים אוטומטית בדפדפן הזה. כדי להעביר למחשב אחר – הורידו קובץ גיבוי.</p>
+  <div class="sect-lbl">גיבוי</div>
+  <p style="margin:6px 0 0;font-size:14px" class="muted">הנתונים נשמרים אוטומטית בדפדפן הזה. כדי להעביר למכשיר אחר – הורידו קובץ גיבוי וטענו אותו שם.</p>
   <div class="modal-actions">
-    <button class="btn cyan small" id="backupBtn">⬇️ הורדת גיבוי</button>
-    <button class="btn small" id="restoreBtn">⬆️ טעינת גיבוי</button>
+    <button class="btn sm tint" id="backupBtn"><span data-icon="download"></span>הורדת גיבוי</button>
+    <button class="btn sm" id="restoreBtn"><span data-icon="upload"></span>טעינת גיבוי</button>
     <input type="file" id="restoreFile" accept=".json,application/json" hidden>
   </div>
   <hr class="divider">
-  <span class="tag" style="background:var(--red)">זהירות</span>
+  <div class="sect-lbl">פעולות שמחליפות את הנתונים</div>
   <div class="modal-actions">
-    <button class="btn purple small" id="sampleBtn">🎲 נתוני דוגמה (מחליף הכול)</button>
-    <button class="btn red small" id="resetBtn">🗑️ מחיקת הכול והתחלה מחדש</button>
+    <button class="btn sm" id="sampleBtn">נתוני דוגמה</button>
+    <button class="btn sm danger" id="resetBtn">מחיקת הכול והתחלה מחדש</button>
   </div>
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<div class="busy" id="busy" hidden><div class="card">⏳ מכינים את הדוח…</div></div>
+<div class="busy" id="busy" hidden><div class="glass box"><span class="spin"></span>מכינים את הדוח…</div></div>
 <div id="report" aria-hidden="true"></div>
 
 <script>
 (() => {
 'use strict';
 
+/* ================= icons ================= */
+const ICONS = {
+  spark: '<path d="M12 2c.7 5.2 3.6 8.4 9 9.2-5.4.8-8.3 4-9 9.2-.7-5.2-3.6-8.4-9-9.2 5.4-.8 8.3-4 9-9.2z" fill="currentColor" stroke="none"/>',
+  chevR: '<path d="m9 18 6-6-6-6"/>',
+  chevL: '<path d="m15 18-6-6 6-6"/>',
+  grid: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 3v18"/>',
+  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/>',
+  gear: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+  wallet: '<path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15V7"/><path d="M16 14h.01"/>',
+  home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  cart: '<circle cx="9" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/><path d="M2.5 3h2.2l2.6 12h11l2.2-8.5H6"/>',
+  trend: '<path d="M22 7 13.5 15.5l-5-5L2 17"/><path d="M16 7h6v6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  copy: '<rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4.5A2.5 2.5 0 0 1 2 12.5v-8A2.5 2.5 0 0 1 4.5 2h8A2.5 2.5 0 0 1 15 4.5V5"/>',
+  trash: '<path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  alert: '<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+  check: '<circle cx="12" cy="12" r="9.5"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
+  bars: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  pie: '<path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>',
+  calendar: '<rect x="3" y="4.5" width="18" height="17" rx="3"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  users: '<circle cx="9" cy="8" r="3.6"/><path d="M2 21a7 7 0 0 1 14 0"/><circle cx="17" cy="9" r="2.8"/><path d="M17 15a5 5 0 0 1 5 5"/>',
+  family: '<circle cx="6.5" cy="6.5" r="2.8"/><circle cx="17.5" cy="6.5" r="2.8"/><path d="M1.5 19a5 5 0 0 1 10 0M12.5 19a5 5 0 0 1 10 0"/><circle cx="12" cy="13" r="2"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
+};
+const ic = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`;
+document.querySelectorAll('[data-icon]').forEach(el => el.insertAdjacentHTML('afterbegin', ic(el.dataset.icon)));
+
 /* ================= constants & helpers ================= */
 const STORE_KEY = 'household-budget-v1';
 const MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
-const COLORS = {ink:'#111111', cream:'#FFF8E7', green:'#3EE07F', orange:'#FF9A3C', purple:'#B98CFF', cyan:'#5CD8F2', yellow:'#FFE14D', red:'#FF5A5A', pink:'#FF8AD0'};
-const PIE_COLORS = ['#FF9A3C','#B98CFF','#5CD8F2','#FFE14D','#FF8AD0','#3EE07F','#FF5A5A','#7FA7FF','#C8F04A','#FFB59A'];
+const COLORS = {green:'#34C759', orange:'#FF9F0A', purple:'#AF52DE', teal:'#32ADE6', red:'#FF3B30', blue:'#0A84FF'};
+const PIE_COLORS = ['#0A84FF','#AF52DE','#FF9F0A','#34C759','#FF375F','#32ADE6','#FFCC00','#5E5CE6','#FF6482','#8E8E93'];
 const GROUPS = [
-  {key:'income',   title:'הכנסות',          emoji:'💰', color:COLORS.green,  css:'var(--green)',  kind:'income', r:'-1.5deg'},
-  {key:'fixed',    title:'הוצאות קבועות',   emoji:'🏠', color:COLORS.orange, css:'var(--orange)', kind:'expense', r:'1.2deg'},
-  {key:'variable', title:'הוצאות משתנות',   emoji:'🛒', color:COLORS.purple, css:'var(--purple)', kind:'expense', r:'-1deg'},
-  {key:'savings',  title:'חיסכון והשקעות',  emoji:'🐷', color:COLORS.cyan,   css:'var(--cyan)',   kind:'saving', r:'1.5deg'},
+  {key:'income',   title:'הכנסות',         icon:'wallet', color:COLORS.green,  v:'green',  kind:'income'},
+  {key:'fixed',    title:'הוצאות קבועות',  icon:'home',   color:COLORS.orange, v:'orange', kind:'expense'},
+  {key:'variable', title:'הוצאות משתנות',  icon:'cart',   color:COLORS.purple, v:'purple', kind:'expense'},
+  {key:'savings',  title:'חיסכון והשקעות', icon:'trend',  color:COLORS.teal,   v:'teal',   kind:'saving'},
 ];
 const G = Object.fromEntries(GROUPS.map(g => [g.key, g]));
+const gVars = g => `--c:var(--${g.v});--t:var(--${g.v}-t);--ink:var(--${g.v}-ink)`;
 
 const $ = s => document.querySelector(s);
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -429,6 +554,7 @@ const keyOf = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, 
 const addMonth = (k, n) => { const [y, m] = k.split('-').map(Number); return keyOf(new Date(y, m - 1 + n, 1)); };
 const monthLabel = k => { const [y, m] = k.split('-').map(Number); return MONTHS[m - 1] + ' ' + y; };
 const nowKey = () => keyOf(new Date());
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
 let state = null;
 
@@ -460,7 +586,6 @@ function template(p) {
     variable: [['סופר ומזון', 2800], ['אוכל בחוץ ומשלוחים', 1100], ['דלק ותחבורה', 900], ['בילויים ותרבות', 800], ['ביגוד והנעלה', 600], ['בריאות ותרופות', 250], ['מתנות ואירועים', 500], ['שונות', 400]],
     savings: [['קרן חירום', 1500], ['קרן השתלמות', 1200], ['השקעות בשוק ההון', 1000], ['חיסכון לחופשה', 600]],
   };
-  // family
   const income = [[sal1, b ? 17200 : 25500]];
   if (b) income.push([sal2, 14300]);
   income.push(['קצבת ילדים (ביטוח לאומי)', childAllowance(k)], ['הכנסות נוספות', 0]);
@@ -480,12 +605,9 @@ function monthFromTemplate(tpl, withPlans) {
   return {groups};
 }
 
-/* find closest existing month before key (or after, if none before) */
 function neighbourMonth(key) {
-  const keys = Object.keys(state.months).sort();
-  const before = keys.filter(k => k < key);
-  if (before.length) return before[before.length - 1];
-  return null;
+  const before = Object.keys(state.months).sort().filter(k => k < key);
+  return before.length ? before[before.length - 1] : null;
 }
 
 function ensureMonth(key) {
@@ -514,15 +636,9 @@ function generateSample() {
   state.months = {};
   const end = nowKey();
   const notes = {
-    'חשמל': 'חשבון דו-חודשי, מזגן פעל הרבה',
-    'מתנות': 'יום הולדת לאמא',
-    'ימי הולדת ומתנות': 'מסיבת יום הולדת בגן',
-    'מתנות ואירועים': 'חתונה של חברים',
-    'שונות': 'תיקון מכונת כביסה',
-    'אוכל בחוץ ומשלוחים': 'ארוחה חגיגית',
-    'ביגוד והנעלה': 'קניות לחורף',
-    'הכנסות נוספות': 'החזר מס',
-    'החזרים ומתנות': 'החזר מס',
+    'חשמל': 'חשבון דו-חודשי, מזגן פעל הרבה', 'מתנות': 'יום הולדת לאמא', 'ימי הולדת ומתנות': 'מסיבת יום הולדת בגן',
+    'מתנות ואירועים': 'חתונה של חברים', 'שונות': 'תיקון מכונת כביסה', 'אוכל בחוץ ומשלוחים': 'ארוחה חגיגית',
+    'ביגוד והנעלה': 'קניות לחורף', 'הכנסות נוספות': 'החזר מס', 'החזרים ומתנות': 'החזר מס',
   };
   for (let i = 5; i >= 0; i--) {
     const key = addMonth(end, -i), idx = 5 - i;
@@ -570,7 +686,6 @@ function totals(m) {
   return t;
 }
 
-/* difference expressed in words */
 function diffInfo(kind, plan, actual) {
   plan = num(plan); actual = num(actual);
   if (!plan && !actual) return {text: '—', cls: 'neutral'};
@@ -600,9 +715,8 @@ function pieData(m) {
   const total = items.reduce((s, x) => s + x.value, 0);
   let list = items;
   if (items.length > 9) {
-    const top = items.slice(0, 8);
     const rest = items.slice(8).reduce((s, x) => s + x.value, 0);
-    list = [...top, {name: 'כל השאר', value: rest}];
+    list = [...items.slice(0, 8), {name: 'כל השאר', value: rest}];
   }
   return {list, total};
 }
@@ -611,79 +725,83 @@ function computeTips(m) {
   const t = totals(m);
   const tips = [];
   const exp = [...m.groups.fixed, ...m.groups.variable];
-  const anyActual = GROUPS.some(g => t[g.key].actual > 0);
-  if (!anyActual) {
-    return [{em: '✏️', text: 'מלאו בטבלאות למטה כמה נכנס וכמה יצא בפועל – והטיפים יופיעו כאן.', c: COLORS.yellow}];
+  if (!GROUPS.some(g => t[g.key].actual > 0)) {
+    return [{tone: 'info', icon: 'spark', text: 'מלאו בטבלאות למטה כמה נכנס וכמה יצא בפועל – והטיפים יופיעו כאן.'}];
   }
-  // 1. overspend
   const overs = exp.map(it => ({name: it.name || 'ללא שם', over: num(it.actual) - num(it.plan), plan: num(it.plan)})).filter(x => x.plan > 0 && x.over > 0).sort((a, b) => b.over - a.over);
   if (overs.length) {
     const o = overs[0];
     const more = overs.length > 1 ? ` (ועוד ${overs.length - 1} סעיפים עם חריגה)` : '';
-    tips.push({em: '⚠️', text: `חרגתם ב"${o.name}" ב-${fmt(o.over)}${more}. נסו לקבוע לסעיף הזה סכום שבועי קבוע.`, c: COLORS.pink});
+    tips.push({tone: 'warn', icon: 'alert', text: `חרגתם ב"${o.name}" ב-${fmt(o.over)}${more}. נסו לקבוע לסעיף הזה סכום שבועי קבוע.`});
   } else if (t.expActual > 0) {
-    tips.push({em: '👏', text: 'אף סעיף הוצאה לא חרג מהתכנון. כל הכבוד!', c: COLORS.green});
+    tips.push({tone: 'good', icon: 'check', text: 'אף סעיף הוצאה לא חרג מהתכנון. כל הכבוד!'});
   }
-  // 2. biggest expense
   const items = expenseItems(m).sort((a, b) => b.value - a.value);
   if (items.length && t.expActual > 0) {
     const big = items[0];
-    tips.push({em: '🏆', text: `ההוצאה הגדולה ביותר החודש: "${big.name}" – ${fmt(big.value)}, שהם ${Math.round(big.value / t.expActual * 100)}% מכל ההוצאות.`, c: COLORS.yellow});
+    tips.push({tone: 'top', icon: 'bars', text: `ההוצאה הגדולה ביותר החודש: "${big.name}" – ${fmt(big.value)}, שהם ${Math.round(big.value / t.expActual * 100)}% מכל ההוצאות.`});
   }
-  // 3. savings
   if (t.savings.actual > 0) {
     const pct = t.income.actual > 0 ? Math.round(t.savings.actual / t.income.actual * 100) : 0;
     const extra = pct >= 10 ? 'מעולה, ממשיכים ככה!' : 'כדאי לשאוף ל-10% מההכנסות לפחות.';
-    tips.push({em: '🐷', text: `חסכתם החודש ${fmt(t.savings.actual)}${pct ? ` – ${pct}% מההכנסות` : ''}. ${extra}`, c: COLORS.cyan});
+    tips.push({tone: 'save', icon: 'trend', text: `חסכתם החודש ${fmt(t.savings.actual)}${pct ? ` – ${pct}% מההכנסות` : ''}. ${extra}`});
   } else {
-    tips.push({em: '🐷', text: 'עוד לא הפרשתם לחיסכון החודש. גם 5% מההכנסה זו התחלה מצוינת.', c: COLORS.cyan});
+    tips.push({tone: 'save', icon: 'trend', text: 'עוד לא הפרשתם לחיסכון החודש. גם 5% מההכנסה זו התחלה מצוינת.'});
   }
   return tips.slice(0, 3);
 }
 
 /* ================= charts ================= */
 let barChart = null, pieChart = null;
+const hexA = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${n >> 8 & 255},${n & 255},${a})`; };
+function theme(light) {
+  if (light) return {fg: '#1C1C1E', muted: '#8E8E93', grid: 'rgba(60,60,67,.08)', bg: '#FFFFFF'};
+  return {fg: cssVar('--fg') || '#1C1C1E', muted: cssVar('--muted') || '#8E8E93', grid: cssVar('--hair') || 'rgba(60,60,67,.08)', bg: cssVar('--bg2') || '#FFFFFF'};
+}
 function chartDefaults() {
   if (!window.Chart) return;
-  Chart.defaults.font.family = "'Rubik', system-ui, sans-serif";
-  Chart.defaults.font.weight = 700;
-  Chart.defaults.font.size = 14;
-  Chart.defaults.color = COLORS.ink;
+  Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Heebo', system-ui, sans-serif";
+  Chart.defaults.font.size = 13;
 }
-function barConfig(t, extra = {}) {
+function barConfig(t, extra = {}, light = false) {
+  const th = theme(light);
+  const cols = [COLORS.green, COLORS.orange, COLORS.teal];
   return {
     type: 'bar',
     data: {
       labels: ['הכנסות', 'הוצאות', 'חיסכון'],
       datasets: [
-        {label: 'תכננתי', data: [t.income.plan, t.expPlan, t.savings.plan], backgroundColor: '#FFFFFF', borderColor: COLORS.ink, borderWidth: 3, borderRadius: 10, borderSkipped: false},
-        {label: 'בפועל', data: [t.income.actual, t.expActual, t.savings.actual], backgroundColor: [COLORS.green, COLORS.orange, COLORS.cyan], borderColor: COLORS.ink, borderWidth: 3, borderRadius: 10, borderSkipped: false},
+        {label: 'תכננתי', data: [t.income.plan, t.expPlan, t.savings.plan], backgroundColor: cols.map(c => hexA(c, .22)), borderRadius: 10, borderSkipped: false, barPercentage: .78, categoryPercentage: .62},
+        {label: 'בפועל', data: [t.income.actual, t.expActual, t.savings.actual], backgroundColor: cols, borderRadius: 10, borderSkipped: false, barPercentage: .78, categoryPercentage: .62},
       ],
     },
     options: Object.assign({
       maintainAspectRatio: false,
-      animation: {duration: 350},
+      animation: {duration: 500, easing: 'easeOutQuart'},
       scales: {
-        x: {reverse: true, grid: {display: false}, ticks: {font: {size: 16, weight: 800}}, border: {color: COLORS.ink, width: 3}},
-        y: {beginAtZero: true, grid: {color: 'rgba(17,17,17,.1)'}, border: {display: false}, ticks: {callback: v => Number(v).toLocaleString('he-IL')}},
+        x: {reverse: true, grid: {display: false}, border: {display: false}, ticks: {color: th.fg, font: {size: 14, weight: 600}}},
+        y: {beginAtZero: true, grid: {color: th.grid}, border: {display: false}, ticks: {color: th.muted, maxTicksLimit: 5, callback: v => Number(v) >= 1000 ? (v / 1000).toLocaleString('he-IL') + 'K' : v}},
       },
       plugins: {
-        legend: {rtl: true, textDirection: 'rtl', position: 'top', align: 'start', labels: {boxWidth: 18, boxHeight: 18, font: {size: 15, weight: 800}, generateLabels: ch => ch.data.datasets.map((d, i) => ({text: d.label, fillStyle: i ? COLORS.yellow : '#FFFFFF', strokeStyle: COLORS.ink, lineWidth: 3, datasetIndex: i, hidden: !ch.isDatasetVisible(i)}))}},
-        tooltip: {rtl: true, textDirection: 'rtl', backgroundColor: COLORS.ink, titleFont: {weight: 800}, bodyFont: {weight: 700}, padding: 10, callbacks: {label: c => ' ' + c.dataset.label + ': ' + fmt(c.raw)}},
+        legend: {display: false},
+        tooltip: {rtl: true, textDirection: 'rtl', backgroundColor: 'rgba(0,0,0,.85)', cornerRadius: 12, padding: 10, titleFont: {weight: 600}, callbacks: {label: c => ' ' + c.dataset.label + ': ' + fmt(c.raw)}},
       },
     }, extra),
   };
 }
-function pieConfig(pd, extra = {}) {
+function pieConfig(pd, extra = {}, light = false) {
+  const th = theme(light);
   return {
     type: 'doughnut',
-    data: {labels: pd.list.map(x => x.name), datasets: [{data: pd.list.map(x => x.value), backgroundColor: pd.list.map((_, i) => PIE_COLORS[i % PIE_COLORS.length]), borderColor: COLORS.ink, borderWidth: 3, hoverOffset: 8}]},
+    data: {labels: pd.list.map(x => x.name), datasets: [{data: pd.list.map(x => x.value), backgroundColor: pd.list.map((_, i) => PIE_COLORS[i % PIE_COLORS.length]), borderColor: th.bg, borderWidth: 3, borderRadius: 6, hoverOffset: 6}]},
     options: Object.assign({
-      maintainAspectRatio: false, cutout: '48%', animation: {duration: 350},
-      plugins: {legend: {display: false}, tooltip: {rtl: true, textDirection: 'rtl', backgroundColor: COLORS.ink, callbacks: {label: c => ' ' + c.label + ': ' + fmt(c.raw) + ' (' + Math.round(c.raw / pd.total * 100) + '%)'}}},
+      maintainAspectRatio: false, cutout: '72%', animation: {duration: 500},
+      plugins: {legend: {display: false}, tooltip: {rtl: true, textDirection: 'rtl', backgroundColor: 'rgba(0,0,0,.85)', cornerRadius: 12, callbacks: {label: c => ' ' + c.label + ': ' + fmt(c.raw) + ' (' + Math.round(c.raw / pd.total * 100) + '%)'}}},
     }, extra),
   };
 }
+function resetCharts() { if (barChart) barChart.destroy(); if (pieChart) pieChart.destroy(); barChart = pieChart = null; if (state) renderSummary(); }
+try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', resetCharts); } catch (e) {}
 
 /* ================= rendering ================= */
 function renderTop() {
@@ -695,42 +813,40 @@ function renderTop() {
   else if (a) title = `התקציב של ${a}`;
   $('#brandTitle').textContent = title;
   document.title = title;
-  const typeTag = {single: '🧍 רווק/ה', couple: '💑 זוג', family: '👨‍👩‍👧 משפחה'}[p.type];
-  let tags = `<span class="tag">${typeTag}</span>`;
-  if (p.type === 'family') tags += `<span class="tag white">${p.kids === 1 ? 'ילד אחד' : p.kids + ' ילדים'}</span>`;
-  tags += `<span class="tag white">נשמר אוטומטית ✓</span>`;
-  $('#brandTags').innerHTML = tags;
+  const typeTxt = {single: 'רווק/ה', couple: 'זוג', family: 'משפחה'}[p.type];
+  const kids = p.type === 'family' ? ' · ' + (p.kids === 1 ? 'ילד אחד' : p.kids + ' ילדים') : '';
+  $('#brandSub').textContent = typeTxt + kids + ' · נשמר אוטומטית';
   $('#monthName').textContent = monthLabel(state.current);
   $('#todayBtn').hidden = state.current === nowKey();
 }
 
 function renderSummary() {
   const m = curMonth(), t = totals(m);
-  $('#sumTag').textContent = 'סיכום ' + monthLabel(state.current);
+  $('#sumTag').textContent = 'סיכום · ' + monthLabel(state.current);
   const anything = GROUPS.some(g => t[g.key].actual > 0);
   const hl = $('#headline');
-  if (!anything) hl.innerHTML = 'בואו נתחיל! <mark>👇</mark>';
-  else if (t.left >= 0) hl.innerHTML = `נשארו לכם <mark>${fmt(t.left)}</mark>`;
-  else hl.innerHTML = `חסרים <mark class="neg">${fmt(t.left)}</mark>`;
-  const planTxt = t.leftPlan >= 0 ? `לפי התכנון היו אמורים להישאר ${fmt(t.leftPlan)}` : `לפי התכנון חסרים ${fmt(t.leftPlan)}`;
-  $('#subline').innerHTML = anything
-    ? `<span class="chip">💰 נכנסו ${fmt(t.income.actual)}</span><span class="chip">💸 יצאו ${fmt(t.expActual)}</span><span class="chip">🐷 נחסכו ${fmt(t.savings.actual)}</span><span class="chip" style="background:var(--yellow)">🎯 ${planTxt}</span>`
-    : `<span class="chip">מלאו את הסכומים בטבלאות למטה – כאן תראו כמה נשאר לכם בסוף החודש.</span>`;
+  if (!anything) hl.innerHTML = `<span class="lbl">בואו נתחיל</span><span class="amt idle">0 ₪</span>`;
+  else if (t.left >= 0) hl.innerHTML = `<span class="lbl">נשארו לכם</span><span class="amt">${fmt(t.left)}</span>`;
+  else hl.innerHTML = `<span class="lbl">חסרים</span><span class="amt neg">${fmt(t.left)}</span>`;
+  const planTxt = t.leftPlan >= 0 ? fmt(t.leftPlan) : 'חסרים ' + fmt(t.leftPlan);
+  const stat = (k, v, c) => `<div class="stat"><div class="k">${c ? `<i style="background:${c}"></i>` : ''}${k}</div><div class="v">${v}</div></div>`;
+  $('#stats').innerHTML = stat('נכנסו', fmt(t.income.actual), COLORS.green) + stat('יצאו', fmt(t.expActual), COLORS.orange)
+    + stat('נחסכו', fmt(t.savings.actual), COLORS.teal) + stat('לפי התכנון היו נשארים', planTxt, '');
 
-  // charts
   const pd = pieData(m);
   if (window.Chart) {
     if (!barChart) barChart = new Chart($('#barChart'), barConfig(t));
     else { const c = barConfig(t); barChart.data.datasets.forEach((d, i) => d.data = c.data.datasets[i].data); barChart.update(); }
     if (!pieChart) pieChart = new Chart($('#pieChart'), pieConfig(pd));
-    else { const c = pieConfig(pd); pieChart.data.labels = c.data.labels; pieChart.data.datasets[0].data = c.data.datasets[0].data; pieChart.data.datasets[0].backgroundColor = c.data.datasets[0].backgroundColor; pieChart.options.plugins.tooltip = c.options.plugins.tooltip; pieChart.update(); }
+    else { const c = pieConfig(pd); pieChart.data.labels = c.data.labels; Object.assign(pieChart.data.datasets[0], {data: c.data.datasets[0].data, backgroundColor: c.data.datasets[0].backgroundColor}); pieChart.options.plugins.tooltip = c.options.plugins.tooltip; pieChart.update(); }
   }
-  $('#pieChart').style.display = pd.total ? '' : 'none';
+  $('#pieChart').style.visibility = pd.total ? '' : 'hidden';
+  $('#pieCenter').innerHTML = pd.total ? `<small>סה״כ הוצאות</small><b>${fmt(pd.total)}</b>` : `<small>עוד אין הוצאות</small>`;
   $('#pieLegend').innerHTML = pd.total
-    ? pd.list.map((x, i) => `<li><span class="sw" style="background:${PIE_COLORS[i % PIE_COLORS.length]}"></span><span>${esc(x.name)}<span class="amt">${fmt(x.value)}</span></span><span class="pct">${Math.round(x.value / pd.total * 100)}%</span></li>`).join('')
-    : `<li class="empty" style="display:block">עוד אין הוצאות החודש 🌱</li>`;
+    ? pd.list.map((x, i) => `<li><span class="sw" style="background:${PIE_COLORS[i % PIE_COLORS.length]}"></span><span class="nm">${esc(x.name)}</span><span class="amt">${fmt(x.value)}</span><span class="pct">${Math.round(x.value / pd.total * 100)}%</span></li>`).join('')
+    : `<li class="empty" style="display:block">כשתמלאו הוצאות, הפירוט יופיע כאן</li>`;
 
-  $('#tips').innerHTML = computeTips(m).map(tp => `<div class="tip" style="background:${tp.c}"><span class="em">${tp.em}</span><span>${esc(tp.text)}</span></div>`).join('');
+  $('#tips').innerHTML = computeTips(m).map(tp => `<div class="tip t-${tp.tone}"><span class="ic">${ic(tp.icon)}</span><span>${esc(tp.text)}</span></div>`).join('');
 }
 
 function renderCubes() {
@@ -738,21 +854,18 @@ function renderCubes() {
   $('#cubes').innerHTML = GROUPS.map(g => {
     const {plan, actual} = groupTotals(m, g.key);
     const ratio = plan > 0 ? actual / plan : (actual > 0 ? 1 : 0);
-    const info = diffInfo(g.kind, plan, actual);
-    let barCls = '';
-    if (g.kind === 'expense' && actual > plan && plan >= 0 && actual > 0 && ratio > 1) barCls = 'over';
-    else if (g.kind !== 'expense' && ratio >= 1 && actual > 0) barCls = 'full';
+    const over = g.kind === 'expense' && actual > plan;
     let status;
-    if (g.kind === 'expense') status = plan - actual >= 0 ? {t: 'נשארו ' + fmt(plan - actual), bad: false} : {t: 'חריגה של ' + fmt(actual - plan), bad: true};
-    else if (g.kind === 'income') status = actual >= plan ? {t: actual > plan ? 'מעל התכנון ב-' + fmt(actual - plan) : 'הגיע הכול ✓', bad: false} : {t: 'נשארו ' + fmt(plan - actual) + ' לקבל', bad: false};
-    else status = actual >= plan ? {t: actual > plan ? 'מעל היעד ב-' + fmt(actual - plan) + ' 🎉' : 'עמדתם ביעד ✓', bad: false} : {t: 'נשארו ' + fmt(plan - actual) + ' ליעד', bad: false};
-    return `<button type="button" class="cube" style="--c:${g.css};--r:${g.r}" data-goto="${g.key}" aria-label="${g.title}: ${fmt(actual)} מתוך ${fmt(plan)}. מעבר לטבלה">
-      <div class="top"><span class="tag white">${g.title}</span><span class="em">${g.emoji}</span></div>
+    if (g.kind === 'expense') status = !over ? {t: 'נשארו ' + fmt(plan - actual), c: 'good'} : {t: 'חריגה של ' + fmt(actual - plan), c: 'bad'};
+    else if (g.kind === 'income') status = actual >= plan ? {t: actual > plan ? 'מעל התכנון ב-' + fmt(actual - plan) : 'הגיע הכול', c: 'good'} : {t: 'נשארו ' + fmt(plan - actual) + ' לקבל', c: 'info'};
+    else status = actual >= plan ? {t: actual > plan ? 'מעל היעד ב-' + fmt(actual - plan) : 'עמדתם ביעד', c: 'good'} : {t: 'נשארו ' + fmt(plan - actual) + ' ליעד', c: 'info'};
+    if (!plan && !actual) status = {t: 'עוד לא מולא', c: 'neutral'};
+    return `<button type="button" class="glass cube" style="${gVars(g)}" data-goto="${g.key}" aria-label="${g.title}: ${fmt(actual)} מתוך ${fmt(plan)}. מעבר לטבלה">
+      <div class="top"><span class="ic">${ic(g.icon)}</span><span class="ttl">${g.title}</span>${ic('chevL', 'chev')}</div>
       <div class="amount">${fmt(actual)}</div>
       <div class="of">מתוך ${fmt(plan)} שתכננתי</div>
-      <div class="bar ${barCls}"><span style="width:${Math.min(100, Math.round(ratio * 100))}%"></span></div>
-      <span class="status ${status.bad ? 'bad' : ''}">${status.t}</span>
-      <span class="hint pixel">לחצו לפירוט ↓</span>
+      <div class="bar ${over ? 'over' : ''}"><span style="width:${Math.min(100, Math.round(ratio * 100))}%"></span></div>
+      <span class="chip ${status.c}">${status.t}</span>
     </button>`;
   }).join('');
 }
@@ -763,32 +876,32 @@ function rowHTML(g, it) {
     <td class="c-name" data-label="סעיף"><input class="in-name" data-f="name" value="${esc(it.name)}" placeholder="שם הסעיף" aria-label="שם הסעיף"></td>
     <td data-label="כמה תכננתי"><input class="in-num" data-f="plan" type="number" inputmode="decimal" min="0" step="any" value="${num(it.plan) || ''}" placeholder="0" aria-label="כמה תכננתי"></td>
     <td data-label="כמה בפועל"><input class="in-num" data-f="actual" type="number" inputmode="decimal" min="0" step="any" value="${num(it.actual) || ''}" placeholder="0" aria-label="כמה בפועל"></td>
-    <td class="diff" data-label="ההפרש"><span class="pill ${d.cls}">${d.text}</span></td>
-    <td class="c-note" data-label="הערות"><input class="in-note" data-f="note" value="${esc(it.note)}" placeholder="הערה…" aria-label="הערות"></td>
-    <td class="del"><button type="button" class="delbtn" data-act="del" aria-label="מחיקת הסעיף" title="מחיקה">🗑️</button></td>
+    <td class="diff" data-label="ההפרש"><span class="chip ${d.cls}">${d.text}</span></td>
+    <td class="c-note" data-label="הערות"><input class="in-note" data-f="note" value="${esc(it.note)}" placeholder="הוספת הערה" aria-label="הערות"></td>
+    <td class="del"><button type="button" class="delbtn" data-act="del" aria-label="מחיקת הסעיף" title="מחיקה">${ic('trash')}</button></td>
   </tr>`;
 }
 
 function footHTML(g, m) {
   const {plan, actual} = groupTotals(m, g.key);
   const d = diffInfo(g.kind, plan, actual);
-  return `<tr><td class="ft-title">סה״כ</td><td><span class="foot-label">תכננתי</span>${fmt(plan)}</td><td><span class="foot-label">בפועל</span>${fmt(actual)}</td><td><span class="pill ${d.cls}">${d.text}</span></td><td class="ft-empty" colspan="2"></td></tr>`;
+  return `<tr><td class="ft-title">סה״כ</td><td><span class="foot-label">תכננתי</span>${fmt(plan)}</td><td><span class="foot-label">בפועל</span>${fmt(actual)}</td><td><span class="chip ${d.cls}">${d.text}</span></td><td class="ft-empty" colspan="2"></td></tr>`;
 }
 
 function renderTables() {
   const m = curMonth();
   $('#tables').innerHTML = GROUPS.map(g => `
-    <section class="card tablecard" id="table-${g.key}" style="--c:${g.css}">
+    <section class="glass tablecard" id="table-${g.key}" style="${gVars(g)}">
       <div class="tablehead">
-        <h2>${g.emoji} ${g.title}</h2>
-        <button type="button" class="btn small" data-act="copy" data-g="${g.key}">📋 העתק תכנון מהחודש הקודם</button>
+        <div class="th-title"><span class="ic">${ic(g.icon)}</span><div><h2>${g.title}</h2><div class="sub">${m.groups[g.key].length} סעיפים</div></div></div>
+        <button type="button" class="btn sm" data-act="copy" data-g="${g.key}">${ic('copy')}העתק תכנון מהחודש הקודם</button>
       </div>
       <table class="items">
         <thead><tr><th>סעיף</th><th>כמה תכננתי</th><th>כמה בפועל</th><th>ההפרש</th><th>הערות</th><th></th></tr></thead>
         <tbody>${m.groups[g.key].map(it => rowHTML(g, it)).join('')}</tbody>
         <tfoot>${footHTML(g, m)}</tfoot>
       </table>
-      <div class="tablefoot"><button type="button" class="btn yellow" data-act="add" data-g="${g.key}">➕ הוספת סעיף</button></div>
+      <div class="tablefoot"><button type="button" class="btn tint" data-act="add" data-g="${g.key}">${ic('plus')}הוספת סעיף</button></div>
     </section>`).join('');
 }
 
@@ -798,7 +911,6 @@ function renderHistory() {
     const t = totals(state.months[k]);
     const out = t.expActual, sv = t.savings.actual, inc = t.income.actual;
     const base = Math.max(inc, out + sv) || 1;
-    const leftW = Math.max(0, t.left) / base * 100, defW = Math.max(0, -t.left) / base * 100;
     const seg = (w, c) => w > 0.5 ? `<span style="width:${w}%;background:${c}"></span>` : '';
     return `<tr class="row ${k === state.current ? 'sel' : ''}" data-month="${k}" tabindex="0" role="button" aria-label="מעבר ל${monthLabel(k)}">
       <td class="h-month">${monthLabel(k)}</td>
@@ -806,14 +918,18 @@ function renderHistory() {
       <td data-label="הוצאתי">${fmt(out)}</td>
       <td data-label="חסכתי">${fmt(sv)}</td>
       <td data-label="נשאר">${t.left >= 0 ? fmt(t.left) : `<span class="negtxt">חסרים ${fmt(t.left)}</span>`}</td>
-      <td class="h-bar"><div class="hbar">${seg(out / base * 100, COLORS.orange)}${seg(sv / base * 100, COLORS.cyan)}${seg(leftW, COLORS.green)}${seg(defW, COLORS.red)}</div></td>
+      <td class="h-bar"><div class="hbar">${seg(out / base * 100, COLORS.orange)}${seg(sv / base * 100, COLORS.teal)}${seg(Math.max(0, t.left) / base * 100, COLORS.green)}${seg(Math.max(0, -t.left) / base * 100, COLORS.red)}</div></td>
     </tr>`;
   }).join('');
 }
 
 function updateFooters() {
   const m = curMonth();
-  for (const g of GROUPS) { const f = document.querySelector(`#table-${g.key} tfoot`); if (f) f.innerHTML = footHTML(g, m); }
+  for (const g of GROUPS) {
+    const sec = document.querySelector(`#table-${g.key}`); if (!sec) continue;
+    sec.querySelector('tfoot').innerHTML = footHTML(g, m);
+    sec.querySelector('.th-title .sub').textContent = m.groups[g.key].length + ' סעיפים';
+  }
 }
 
 function renderAll() { renderTop(); renderSummary(); renderCubes(); renderTables(); renderHistory(); }
@@ -833,7 +949,7 @@ $('#tables').addEventListener('input', e => {
   it[f] = (f === 'plan' || f === 'actual') ? Math.max(0, num(inp.value)) : inp.value;
   if (f === 'plan' || f === 'actual') {
     const d = diffInfo(G[tr.dataset.g].kind, it.plan, it.actual);
-    tr.querySelector('.diff').innerHTML = `<span class="pill ${d.cls}">${d.text}</span>`;
+    tr.querySelector('.diff').innerHTML = `<span class="chip ${d.cls}">${d.text}</span>`;
   }
   save(); renderDerived();
 });
@@ -860,15 +976,14 @@ $('#tables').addEventListener('click', e => {
     const gk = btn.dataset.g;
     const prevKey = neighbourMonth(state.current);
     if (!prevKey) { toast('אין חודש קודם להעתיק ממנו'); return; }
-    const prev = state.months[prevKey].groups[gk];
     let added = 0, updated = 0;
-    for (const p of prev) {
+    for (const p of state.months[prevKey].groups[gk]) {
       const ex = m.groups[gk].find(x => (x.name || '').trim() === (p.name || '').trim());
       if (ex) { if (num(ex.plan) !== num(p.plan)) { ex.plan = p.plan; updated++; } }
       else { m.groups[gk].push({id: uid(), name: p.name, plan: p.plan, actual: 0, note: ''}); added++; }
     }
     save(); renderTables(); renderDerived();
-    toast(`הועתק התכנון מ${monthLabel(prevKey)} (${updated} עודכנו, ${added} נוספו)`);
+    toast(`הועתק התכנון מ${monthLabel(prevKey)} · ${updated} עודכנו, ${added} נוספו`);
   }
 });
 
@@ -920,7 +1035,7 @@ function finishOnboarding(sample) {
   $('#onboard').hidden = true;
   renderAll();
   window.scrollTo(0, 0);
-  toast(sample ? 'נוצרו נתוני דוגמה ל-6 חודשים 🎲' : 'הכול מוכן! מלאו את הסכומים בטבלאות 👇');
+  toast(sample ? 'נוצרו נתוני דוגמה ל-6 חודשים' : 'הכול מוכן · מלאו את הסכומים בטבלאות');
 }
 $('#obStart').addEventListener('click', () => finishOnboarding(false));
 $('#obSample').addEventListener('click', () => finishOnboarding(true));
@@ -936,7 +1051,7 @@ function showOnboarding() {
 const dlg = $('#settings');
 $('#settingsBtn').addEventListener('click', () => {
   const p = state.profile;
-  $('#setFields').innerHTML = `<p style="margin:12px 0 0;font-weight:500">סוג משק הבית: <b>${{single: 'רווק/ה', couple: 'זוג', family: 'משפחה עם ילדים'}[p.type]}</b>. לשינוי הסוג – "התחלה מחדש" למטה.</p>`
+  $('#setFields').innerHTML = `<p style="margin:10px 0 0;font-size:14px" class="muted">סוג משק הבית: <b style="color:var(--fg)">${{single: 'רווק/ה', couple: 'זוג', family: 'משפחה עם ילדים'}[p.type]}</b>. כדי לשנות סוג – "התחלה מחדש" למטה.</p>`
     + namesFields(p.type, 'set', p.names)
     + (p.type === 'family' ? `<div class="field"><label for="setKids">מספר ילדים</label><input id="setKids" type="number" min="1" max="12" value="${p.kids}"></div>` : '');
   dlg.showModal();
@@ -947,11 +1062,10 @@ $('#saveSettings').addEventListener('click', () => {
   const p = state.profile;
   p.names = [($('#setn1') || {}).value || '', ($('#setn2') || {}).value || ''].map(s => s.trim());
   if (p.type === 'family') p.kids = Math.min(12, Math.max(1, Math.round(num($('#setKids').value)) || 1));
-  save(); renderTop(); dlg.close(); toast('ההגדרות נשמרו ✓');
+  save(); renderTop(); dlg.close(); toast('ההגדרות נשמרו');
 });
 $('#backupBtn').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
-  downloadBlob(blob, `גיבוי-תקציב-${nowKey()}.json`);
+  downloadBlob(new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'}), `גיבוי-תקציב-${nowKey()}.json`);
 });
 $('#restoreBtn').addEventListener('click', () => $('#restoreFile').click());
 $('#restoreFile').addEventListener('change', async e => {
@@ -961,13 +1075,13 @@ $('#restoreFile').addEventListener('change', async e => {
     if (!data || !data.profile || !data.months) throw new Error('bad');
     if (!confirm('הגיבוי יחליף את כל הנתונים הנוכחיים. להמשיך?')) return;
     state = data; if (!state.current) state.current = nowKey();
-    saveNow(); dlg.close(); renderAll(); toast('הגיבוי נטען ✓');
+    saveNow(); dlg.close(); renderAll(); toast('הגיבוי נטען');
   } catch (err) { toast('הקובץ לא נראה כמו גיבוי תקין'); }
   e.target.value = '';
 });
 $('#sampleBtn').addEventListener('click', () => {
   if (!confirm('נתוני הדוגמה יחליפו את כל הנתונים שלכם. להמשיך?')) return;
-  generateSample(); saveNow(); dlg.close(); renderAll(); toast('נוצרו נתוני דוגמה ל-6 חודשים 🎲');
+  generateSample(); saveNow(); dlg.close(); renderAll(); toast('נוצרו נתוני דוגמה ל-6 חודשים');
 });
 $('#resetBtn').addEventListener('click', () => {
   if (!confirm('למחוק את כל הנתונים ולהתחיל מחדש? אי אפשר לבטל את זה.')) return;
@@ -992,7 +1106,6 @@ function exportExcel() {
   const qn = n => `'${n}'`;
   const totalRow = {};
 
-  // group sheets
   const groupSheets = GROUPS.map(g => {
     const items = m.groups[g.key];
     const diffHead = g.kind === 'expense' ? 'הפרש (+ נשאר / − חריגה)' : 'הפרש (+ מעל התכנון / − חסר)';
@@ -1017,12 +1130,11 @@ function exportExcel() {
     return [ws, g.title];
   });
 
-  // summary sheet
   const sAoa = [[`סיכום תקציב – ${label}`], [$('#brandTitle').textContent], [], ['קבוצה', 'כמה תכננתי', 'כמה בפועל', 'הפרש']];
   GROUPS.forEach(g => sAoa.push([g.title, 0, 0, 0]));
   sAoa.push(['נשאר בסוף החודש', 0, 0, '']);
   sAoa.push([], ['תובנות']);
-  computeTips(m).forEach(tp => sAoa.push([tp.em + ' ' + tp.text]));
+  computeTips(m).forEach(tp => sAoa.push(['• ' + tp.text]));
   const ss = XLSX.utils.aoa_to_sheet(sAoa);
   GROUPS.forEach((g, i) => {
     const r = 5 + i, sh = qn(g.title), tr = totalRow[g.key];
@@ -1036,7 +1148,6 @@ function exportExcel() {
   XLSX.utils.book_append_sheet(wb, ss, 'סיכום');
   groupSheets.forEach(([ws, name]) => XLSX.utils.book_append_sheet(wb, ws, name));
 
-  // full history
   const keys = Object.keys(state.months).sort();
   const hAoa = [['היסטוריה מלאה – סיכום לפי חודש'], ['חודש', 'הכנסות', 'הוצאות קבועות', 'הוצאות משתנות', 'חיסכון והשקעות', 'נשאר']];
   keys.forEach(k => { const tt = totals(state.months[k]); hAoa.push([monthLabel(k), tt.income.actual, tt.fixed.actual, tt.variable.actual, tt.savings.actual, 0]); });
@@ -1063,7 +1174,7 @@ function exportExcel() {
   XLSX.utils.book_append_sheet(wb, hs, 'היסטוריה מלאה');
 
   XLSX.writeFile(wb, `תקציב-${state.current}.xlsx`);
-  toast('קובץ האקסל ירד ✓');
+  toast('קובץ האקסל ירד');
 }
 $('#xlsBtn').addEventListener('click', () => { try { exportExcel(); } catch (e) { console.error(e); toast('משהו השתבש בייצוא לאקסל'); } });
 
@@ -1076,56 +1187,57 @@ async function exportPDF() {
   try {
     const m = curMonth(), t = totals(m), label = monthLabel(state.current);
     const prevKey = neighbourMonth(state.current);
-    const insights = computeTips(m).map(x => x.em + ' ' + x.text);
-    if (t.income.actual > 0) insights.push(`📌 מכל 100 ₪ שנכנסו: ${Math.round(t.expActual / t.income.actual * 100)} ₪ הלכו להוצאות ו-${Math.round(t.savings.actual / t.income.actual * 100)} ₪ לחיסכון.`);
+    const insights = computeTips(m).map(x => x.text);
+    if (t.income.actual > 0) insights.push(`מכל 100 ₪ שנכנסו: ${Math.round(t.expActual / t.income.actual * 100)} ₪ הלכו להוצאות ו-${Math.round(t.savings.actual / t.income.actual * 100)} ₪ לחיסכון.`);
     if (prevKey) {
       const pt = totals(state.months[prevKey]); const d = t.expActual - pt.expActual;
-      if (pt.expActual > 0) insights.push(d > 0 ? `📈 הוצאתם ${fmt(d)} יותר מאשר ב${monthLabel(prevKey)}.` : d < 0 ? `📉 הוצאתם ${fmt(d)} פחות מאשר ב${monthLabel(prevKey)}. יפה!` : `↔️ הוצאתם בדיוק כמו ב${monthLabel(prevKey)}.`);
+      if (pt.expActual > 0) insights.push(d > 0 ? `הוצאתם ${fmt(d)} יותר מאשר ב${monthLabel(prevKey)}.` : d < 0 ? `הוצאתם ${fmt(d)} פחות מאשר ב${monthLabel(prevKey)}. יפה!` : `הוצאתם בדיוק כמו ב${monthLabel(prevKey)}.`);
     }
-    const head = t.left >= 0 ? `נשארו לכם ${fmt(t.left)}` : `חסרים ${fmt(t.left)}`;
-    const metric = g => { const x = t[g.key]; const d = diffInfo(g.kind, x.plan, x.actual); return `<div class="rm" style="background:${g.color}"><div class="t">${g.emoji} ${g.title}</div><div class="v">${fmt(x.actual)}</div><div class="s">מתוך ${fmt(x.plan)} שתכננתי<br>${d.text}</div></div>`; };
+    const headLbl = t.left >= 0 ? 'נשארו לכם' : 'חסרים';
+    const metric = g => { const x = t[g.key]; const d = diffInfo(g.kind, x.plan, x.actual); return `<div class="rm"><div class="t"><span class="dot" style="background:${g.color}"></span>${g.title}</div><div class="v">${fmt(x.actual)}</div><div class="s">מתוך ${fmt(x.plan)} שתכננתי · ${d.text}</div></div>`; };
     const table = g => {
-      const rows = m.groups[g.key].map(it => { const d = diffInfo(g.kind, it.plan, it.actual); return `<tr><td>${esc(it.name)}</td><td>${fmt(it.plan)}</td><td>${fmt(it.actual)}</td><td>${d.text}</td><td>${esc(it.note)}</td></tr>`; }).join('');
+      const rows = m.groups[g.key].map(it => { const d = diffInfo(g.kind, it.plan, it.actual); return `<tr><td>${esc(it.name)}</td><td>${fmt(it.plan)}</td><td>${fmt(it.actual)}</td><td style="color:${d.cls === 'bad' ? '#D70015' : d.cls === 'good' ? '#1E8E3E' : '#6C6C70'}">${d.text}</td><td style="color:#6C6C70">${esc(it.note)}</td></tr>`; }).join('');
       const gt = t[g.key], d = diffInfo(g.kind, gt.plan, gt.actual);
-      return `<div class="rs"><div class="rcard"><h2>${g.emoji} ${g.title}</h2><table style="--c:${g.color}"><thead><tr><th>סעיף</th><th>תכננתי</th><th>בפועל</th><th>ההפרש</th><th>הערות</th></tr></thead><tbody>${rows}<tr class="tot"><td>סה״כ</td><td>${fmt(gt.plan)}</td><td>${fmt(gt.actual)}</td><td>${d.text}</td><td></td></tr></tbody></table></div></div>`;
+      return `<div class="rs"><div class="rcard"><h2><span class="dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-left:8px;background:${g.color}"></span>${g.title}</h2><table><thead><tr><th>סעיף</th><th>תכננתי</th><th>בפועל</th><th>ההפרש</th><th>הערות</th></tr></thead><tbody>${rows}<tr class="tot"><td>סה״כ</td><td>${fmt(gt.plan)}</td><td>${fmt(gt.actual)}</td><td>${d.text}</td><td></td></tr></tbody></table></div></div>`;
     };
     const hist = Object.keys(state.months).sort().slice(-6).map(k => { const x = totals(state.months[k]); return `<tr><td>${monthLabel(k)}</td><td>${fmt(x.income.actual)}</td><td>${fmt(x.expActual)}</td><td>${fmt(x.savings.actual)}</td><td>${x.left >= 0 ? fmt(x.left) : 'חסרים ' + fmt(x.left)}</td></tr>`; }).join('');
     rep.innerHTML = `
-      <div class="rs" style="padding-top:22px"><div class="rcard" style="background:${COLORS.yellow}">
-        <div style="font-size:15px;font-weight:800">${esc($('#brandTitle').textContent)} · הופק ב-${new Date().toLocaleDateString('he-IL')}</div>
-        <div style="font-size:34px;font-weight:900;margin:6px 0">דוח תקציב – ${label}</div>
-        <div style="font-size:26px;font-weight:900">${head}</div>
+      <div class="rs" style="padding-top:26px"><div class="rcard" style="padding:24px">
+        <div style="font-size:13px;color:#6C6C70;font-weight:600">${esc($('#brandTitle').textContent)} · הופק ב-${new Date().toLocaleDateString('he-IL')}</div>
+        <div style="font-size:28px;font-weight:700;margin:6px 0 14px;letter-spacing:-.02em">דוח תקציב · ${label}</div>
+        <div style="font-size:18px;font-weight:600">${headLbl}</div>
+        <div style="font-size:48px;font-weight:700;letter-spacing:-.03em;color:${t.left >= 0 ? '#6B5BD2' : '#D70015'}">${fmt(t.left)}</div>
       </div></div>
       <div class="rs"><div class="rmetrics">${GROUPS.map(metric).join('')}</div></div>
       <div class="rs"><div class="rcharts">
-        <div class="rcard"><h2>📊 תכנון מול בפועל</h2><canvas id="rBar" width="320" height="230"></canvas></div>
-        <div class="rcard"><h2>🍩 התפלגות ההוצאות</h2><div style="display:flex;gap:10px;align-items:center"><canvas id="rPie" width="150" height="150"></canvas><div id="rLeg" style="font-size:12px;font-weight:700;flex:1"></div></div></div>
+        <div class="rcard"><h2>תכנון מול בפועל</h2><canvas id="rBar" width="320" height="220"></canvas></div>
+        <div class="rcard"><h2>התפלגות ההוצאות</h2><div style="display:flex;gap:12px;align-items:center"><canvas id="rPie" width="140" height="140"></canvas><div id="rLeg" style="font-size:12px;flex:1"></div></div></div>
       </div></div>
-      <div class="rs"><div class="rcard"><h2>💡 תובנות</h2><ul>${insights.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div></div>
+      <div class="rs"><div class="rcard"><h2>תובנות</h2><ul class="ins">${insights.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div></div>
       ${GROUPS.map(table).join('')}
-      <div class="rs" style="padding-bottom:22px"><div class="rcard"><h2>🗓️ 6 החודשים האחרונים</h2><table><thead><tr><th>חודש</th><th>נכנס</th><th>הוצאתי</th><th>חסכתי</th><th>נשאר</th></tr></thead><tbody>${hist}</tbody></table></div></div>`;
+      <div class="rs" style="padding-bottom:26px"><div class="rcard"><h2>6 החודשים האחרונים</h2><table><thead><tr><th>חודש</th><th>נכנס</th><th>הוצאתי</th><th>חסכתי</th><th>נשאר</th></tr></thead><tbody>${hist}</tbody></table></div></div>`;
     const pd = pieData(m);
     const noAnim = {responsive: false, animation: false, devicePixelRatio: 2};
-    charts.push(new Chart(rep.querySelector('#rBar'), barConfig(t, noAnim)));
-    if (pd.total) charts.push(new Chart(rep.querySelector('#rPie'), pieConfig(pd, noAnim)));
-    rep.querySelector('#rLeg').innerHTML = pd.total ? pd.list.map((x, i) => `<div style="display:flex;gap:6px;align-items:center;margin:3px 0"><span style="width:12px;height:12px;border:2px solid #111;border-radius:4px;background:${PIE_COLORS[i % PIE_COLORS.length]}"></span><span style="flex:1">${esc(x.name)}</span><b>${Math.round(x.value / pd.total * 100)}%</b></div>`).join('') : 'אין הוצאות החודש';
+    charts.push(new Chart(rep.querySelector('#rBar'), barConfig(t, noAnim, true)));
+    if (pd.total) charts.push(new Chart(rep.querySelector('#rPie'), pieConfig(pd, noAnim, true)));
+    rep.querySelector('#rLeg').innerHTML = pd.total ? pd.list.map((x, i) => `<div style="display:flex;gap:6px;align-items:center;margin:4px 0"><span style="width:8px;height:8px;border-radius:50%;background:${PIE_COLORS[i % PIE_COLORS.length]}"></span><span style="flex:1">${esc(x.name)}</span><b>${Math.round(x.value / pd.total * 100)}%</b></div>`).join('') : 'אין הוצאות החודש';
     await document.fonts.ready;
 
     const {jsPDF} = window.jspdf;
     const pdf = new jsPDF({orientation: 'p', unit: 'mm', format: 'a4'});
     const PW = 210, PH = 297, M = 8, W = PW - M * 2;
-    const paint = () => { pdf.setFillColor(255, 248, 231); pdf.rect(0, 0, PW, PH, 'F'); };
+    const paint = () => { pdf.setFillColor(245, 245, 247); pdf.rect(0, 0, PW, PH, 'F'); };
     paint();
     let y = M;
     for (const sec of rep.children) {
-      const canvas = await html2canvas(sec, {scale: 2, backgroundColor: COLORS.cream, logging: false});
+      const canvas = await html2canvas(sec, {scale: 2, backgroundColor: '#F5F5F7', logging: false});
       const h = canvas.height * W / canvas.width;
       if (y + h > PH - M && y > M) { pdf.addPage(); paint(); y = M; }
       pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', M, y, W, Math.min(h, PH - M * 2));
       y += h;
     }
     pdf.save(`דוח-תקציב-${state.current}.pdf`);
-    toast('דוח ה-PDF ירד ✓');
+    toast('דוח ה-PDF ירד');
   } catch (e) {
     console.error(e); toast('משהו השתבש ביצירת הדוח');
   } finally {
