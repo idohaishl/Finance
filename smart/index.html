@@ -1144,14 +1144,26 @@ $('#tables').addEventListener('click', e => {
     const gk = btn.dataset.g;
     const prevKey = neighbourMonth(state.current);
     if (!prevKey) { toast('אין חודש קודם להעתיק ממנו'); return; }
-    let added = 0, updated = 0;
-    for (const p of state.months[prevKey].groups[gk]) {
-      const ex = m.groups[gk].find(x => (x.name || '').trim() === (p.name || '').trim());
-      if (ex) { if (num(ex.plan) !== num(p.plan)) { ex.plan = p.plan; updated++; } }
-      else { m.groups[gk].push({id: uid(), name: p.name, plan: p.plan, actual: 0, note: ''}); added++; }
-    }
+    // exact copy: same items, order and plans as the previous month; keep what was already entered here
+    const cur = m.groups[gk], used = new Set(), nm = x => (x.name || '').trim();
+    let added = 0;
+    const list = state.months[prevKey].groups[gk].map(p => {
+      const ex = cur.find(x => !used.has(x) && nm(x) && nm(x) === nm(p));
+      if (ex) { used.add(ex); ex.plan = p.plan; return ex; }
+      added++;
+      return {id: uid(), name: p.name, plan: p.plan, actual: 0, note: ''};
+    });
+    const hasData = x => num(x.actual) || (x.note || '').trim() ||
+      (state.tx || []).some(r => !r.ignore && r.month === state.current && r.g === gk && (r.item || '').trim() === nm(x));
+    const rest = cur.filter(x => !used.has(x));
+    const kept = rest.filter(hasData), removed = rest.length - kept.length;
+    m.groups[gk] = list.concat(kept);
     save(); renderTables(); renderDerived();
-    toast(`הועתק התכנון מ${monthLabel(prevKey)} · ${updated} עודכנו, ${added} נוספו`);
+    const parts = [`הועתקו ${list.length} סעיפים מ${monthLabel(prevKey)}`];
+    if (added) parts.push(added === 1 ? 'סעיף אחד נוסף' : `${added} נוספו`);
+    if (removed) parts.push(removed === 1 ? 'סעיף אחד הוסר' : `${removed} הוסרו`);
+    if (kept.length) parts.push(kept.length === 1 ? 'סעיף אחד נשאר כי יש בו סכומים' : `${kept.length} נשארו כי יש בהם סכומים`);
+    toast(parts.join(' · '));
   }
 });
 
